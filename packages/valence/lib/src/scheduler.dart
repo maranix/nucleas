@@ -130,7 +130,10 @@ final class _RingBufferSchedulerImpl implements Scheduler {
 
   @override
   int pop() {
-    if (isEmpty) return 0;
+    if (isEmpty) {
+      clear();
+      return 0;
+    }
 
     final nodeId = _data[_head & _mask];
     _head += 1;
@@ -205,7 +208,10 @@ final class _GrowableRingBufferSchedulerImpl implements Scheduler {
 
   @override
   int pop() {
-    if (isEmpty) return 0;
+    if (isEmpty) {
+      clear();
+      return 0;
+    }
 
     final nodeId = _data[_head & _mask];
     _head += 1;
