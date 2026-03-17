@@ -4,7 +4,7 @@ import 'dart:typed_data';
 ///
 /// [fixed] means the scheduler will throw a [StateError] if the buffer is full.
 /// [growable] means the scheduler will grow the buffer as needed.
-enum SchedularCapacity { fixed, growable }
+enum SchedulerCapacity { fixed, growable }
 
 /// An interface for reactive nodes that can be scheduled for execution.
 ///
@@ -40,7 +40,7 @@ abstract interface class SchedulableNode {
 /// The default capacity is `1024`, which supports up to 1 024 pending updates
 /// per flush cycle.
 ///
-/// The default capacity strategy is [SchedularCapacity.fixed].
+/// The default capacity strategy is [SchedulerCapacity.fixed].
 abstract interface class Scheduler {
   /// Creates a ring-buffer–backed [Scheduler] with the given [capacity].
   ///
@@ -49,7 +49,7 @@ abstract interface class Scheduler {
   /// flush cycle.
   factory Scheduler([
     int capacity = 1024,
-    SchedularCapacity capacityStrategy = SchedularCapacity.fixed,
+    SchedulerCapacity capacityStrategy = SchedulerCapacity.fixed,
   ]) => switch (capacityStrategy) {
     .fixed => _RingBufferSchedulerImpl(capacity),
     .growable => _GrowableRingBufferSchedulerImpl(capacity),

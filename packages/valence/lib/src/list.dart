@@ -92,8 +92,6 @@ final class GrowableUint32List {
         _data[i] = _data[_length - 1];
         _length -= 1;
 
-        compact();
-
         return;
       }
     }

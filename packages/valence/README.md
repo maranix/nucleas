@@ -43,7 +43,10 @@ All mutations go through `update`, which accepts a function that receives the cu
 
 ### Computed
 
-A **Computed** derives its value from other reactive nodes. It is **lazy** and **cached** — the compute function only re-runs when a dependency has changed *and* the value is read.
+A **Computed** derives its value from other reactive nodes. It is **lazy** and **cached** — the compute function only re-runs when a dependency has changed *and* the value is needed.
+
+- **Without dependents:** The computed simply marks itself dirty and defers recomputation until `value()` is explicitly read.
+- **With dependents:** When a dirty computed has downstream consumers, it recomputes during the flush cycle to perform an equality check. If the recomputed value equals the previous one, downstream propagation is suppressed — preventing unnecessary cascading updates.
 
 ```dart
 final price    = Atom<double>(10);

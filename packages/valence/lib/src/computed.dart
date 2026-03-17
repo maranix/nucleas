@@ -13,8 +13,17 @@ import 'package:valence/src/utils.dart';
 ///
 /// Unlike [Effect], a [Computed] does **not** re-execute its function as soon
 /// as a dependency changes. Instead, it marks itself as _dirty_ and defers
-/// recomputation until the next time [value] is read. This avoids redundant
-/// work when multiple upstream atoms change in the same update cycle.
+/// recomputation until the value is next needed. This avoids redundant work
+/// when multiple upstream atoms change in the same update cycle.
+///
+/// **With dependents:** When a dirty computed has downstream consumers
+/// (other [Computed] or [Effect] nodes), the value is recomputed during the
+/// flush cycle so that an equality check can determine whether to propagate
+/// further. If the recomputed value equals the previous one, downstream
+/// propagation is suppressed entirely.
+///
+/// **Without dependents:** The computed simply marks itself dirty and
+/// defers all recomputation until [value] is explicitly read.
 ///
 /// ## Propagation
 ///
@@ -77,7 +86,15 @@ final class _ComputedImpl<T> implements Computed<T> {
     _context.registerSchedulableNode(_id, this);
 
     // Perform the initial computation to establish dependencies.
-    _recompute();
+    // If it throws, clean up the node from the graph to prevent zombie
+    // entries with an uninitialised `late T _cached`.
+    try {
+      _recompute();
+    } catch (_) {
+      _isDisposed = true;
+      _context.disposeNode(_id);
+      rethrow;
+    }
   }
 
   /// The pure derivation function supplied by the caller.

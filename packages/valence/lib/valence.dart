@@ -35,7 +35,7 @@ export 'src/atom.dart';
 export 'src/computed.dart';
 export 'src/context.dart' show ValenceContext;
 export 'src/effect.dart';
-export 'src/scheduler.dart' show Scheduler, SchedulableNode;
+export 'src/scheduler.dart' show Scheduler, SchedulableNode, SchedulerCapacity;
 
 abstract final class Valence {
   /// Drains the scheduler queue and executes all pending [SchedulableNode]s

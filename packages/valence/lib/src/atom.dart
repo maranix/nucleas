@@ -77,7 +77,6 @@ abstract interface class Atom<T> {
   void update(
     AtomMutator<T> mutator, {
     bool flush = false,
-    bool Function(T a, T b)? equals,
   });
 
   /// Removes this atom from the dependency graph.
@@ -137,7 +136,6 @@ final class _AtomImpl<T> implements Atom<T> {
   void update(
     AtomMutator<T> mutator, {
     bool flush = false,
-    bool Function(T a, T b)? equals,
   }) {
     _checkDisposed('update');
 

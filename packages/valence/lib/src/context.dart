@@ -121,12 +121,15 @@ abstract interface class ValenceContext {
 
 /// Default implementation of [ValenceContext].
 ///
-/// Maintains the dependency graph as two parallel maps:
+/// Maintains the dependency graph as two parallel lists indexed by node ID:
 ///
-/// * `_dependents[A]` — the set of node IDs that **depend on** A (i.e. A's
+/// * `_dependents[id]` — the set of node IDs that **depend on** id (i.e.
 ///   downstream consumers). Used to propagate invalidation.
-/// * `_dependencies[A]` — the set of node IDs that A **depends on** (i.e. A's
+/// * `_dependencies[id]` — the set of node IDs that id **depends on** (i.e.
 ///   upstream providers). Used to clean up stale edges before recomputation.
+///
+/// Using lists instead of maps gives O(1) indexed access with better cache
+/// locality. Node IDs are recycled via a free-list to keep the lists compact.
 ///
 /// A call stack (`_compStack`) tracks which [Computed] or [Effect] is
 /// currently being evaluated so that [trackRead] knows where to record the
@@ -159,21 +162,34 @@ final class _ValenceContextImpl implements ValenceContext {
   /// [Computed] will push two IDs onto the stack.
   final GrowableUint32List _compStack = GrowableUint32List(16);
 
-  /// **Downstream** map: `nodeId → [dependentIds...]`.
+  /// **Downstream** list: `nodeId → [dependentIds...]`.
   ///
   /// When node A is read inside node B's computation, B is added to
   /// `_dependents[A]`.
-  final Map<int, GrowableUint32List> _dependents = {};
+  ///
+  /// Index 0 is unused (node IDs start at 1).
+  final List<GrowableUint32List?> _dependents = [null];
 
-  /// **Upstream** map: `nodeId → [providerIds...]`.
+  /// **Upstream** list: `nodeId → [providerIds...]`.
   ///
   /// When node B reads node A, A is added to `_dependencies[B]`.
-  final Map<int, GrowableUint32List> _dependencies = {};
+  ///
+  /// Index 0 is unused (node IDs start at 1).
+  final List<GrowableUint32List?> _dependencies = [null];
 
   /// Registry mapping node IDs to their [SchedulableNode] instances.
   ///
   /// Only [Computed] and [Effect] nodes are registered here.
-  final Map<int, SchedulableNode> _schedulables = {};
+  ///
+  /// Index 0 is unused (node IDs start at 1).
+  final List<SchedulableNode?> _schedulables = [null];
+
+  /// Free-list of recycled node IDs.
+  ///
+  /// When a node is disposed (and has no phantom entry in the scheduler),
+  /// its ID is pushed here. [registerNode] pops from this list before
+  /// falling back to [_nextNodeId].
+  final GrowableUint32List _freeIds = GrowableUint32List();
 
   /// The maximum number of times [flush] will run before throwing.
   int _maxFlushIterations = 100_000;
@@ -189,12 +205,22 @@ final class _ValenceContextImpl implements ValenceContext {
 
   @override
   int registerNode() {
-    final id = _nextNodeId;
+    int id;
+
+    if (_freeIds.isNotEmpty) {
+      id = _freeIds.removeLast();
+    } else {
+      id = _nextNodeId;
+      _nextNodeId += 1;
+
+      // Grow all lists to accommodate the new ID.
+      _dependents.add(null);
+      _dependencies.add(null);
+      _schedulables.add(null);
+    }
 
     _dependents[id] = GrowableUint32List();
     _dependencies[id] = GrowableUint32List();
-
-    _nextNodeId += 1;
 
     return id;
   }
@@ -221,28 +247,29 @@ final class _ValenceContextImpl implements ValenceContext {
     if (_compStack.isEmpty) return;
 
     final consumerId = _compStack.last;
-
-    // These are guaranteed non-null because registerNode() pre-initialises
-    // both maps for every node.
-    final providerDependents = _dependents[providerId]!;
     final consumerDependencies = _dependencies[consumerId]!;
 
-    // Establish a bidirectional link, skipping duplicates.
-    if (!providerDependents.contains(consumerId)) {
-      providerDependents.add(consumerId);
-    }
+    // Only check the consumer's (smaller) dependency list for duplicates.
+    // The provider's dependents list is guaranteed not to contain this
+    // consumer because clearDependencies() is always called before
+    // re-tracking. We only guard against the same provider being read
+    // multiple times within a single computation (e.g. `a.value() + a.value()`).
+    if (consumerDependencies.contains(providerId)) return;
 
-    if (!consumerDependencies.contains(providerId)) {
-      consumerDependencies.add(providerId);
-    }
+    consumerDependencies.add(providerId);
+    _dependents[providerId]!.add(consumerId);
   }
 
   @override
-  GrowableUint32List getDependents(int nodeId) =>
-      _dependents[nodeId] ?? GrowableUint32List(0);
+  GrowableUint32List getDependents(int nodeId) {
+    if (nodeId >= _dependents.length) return .new(0);
+    return _dependents[nodeId] ?? .new(0);
+  }
 
   @override
   void scheduleUpdate(int nodeId) {
+    if (nodeId >= _schedulables.length) return;
+
     final node = _schedulables[nodeId];
 
     // If the node doesn't exist in the registry or is already enqueued,
@@ -263,7 +290,9 @@ final class _ValenceContextImpl implements ValenceContext {
 
   @override
   void registerSchedulableNode(int nodeId, SchedulableNode node) {
-    _schedulables[nodeId] = node;
+    if (nodeId < _schedulables.length) {
+      _schedulables[nodeId] = node;
+    }
   }
 
   @override
@@ -297,8 +326,17 @@ final class _ValenceContextImpl implements ValenceContext {
     }
   }
 
+  /// Removes all **dependency** edges originating from [nodeId].
+  ///
+  /// **Performance note:** This method is O(k × d) where *k* is the number
+  /// of dependencies being cleared and *d* is the average size of each
+  /// provider's dependents list (due to the linear scan in
+  /// [GrowableUint32List.remove]). For extremely dense graphs, a
+  /// doubly-linked or index-based edge structure could reduce this to O(k).
   @override
   void clearDependencies(int nodeId) {
+    if (nodeId >= _dependencies.length) return;
+
     final deps = _dependencies[nodeId];
 
     if (deps == null || deps.isEmpty) return;
@@ -306,7 +344,10 @@ final class _ValenceContextImpl implements ValenceContext {
     // For each provider this node previously depended on, remove the
     // reverse (dependent) link.
     for (var i = 0; i < deps.length; i++) {
-      _dependents[deps[i]]?.remove(nodeId);
+      final providerId = deps[i];
+      if (providerId < _dependents.length) {
+        _dependents[providerId]?.remove(nodeId);
+      }
     }
 
     deps.clear();
@@ -314,13 +355,18 @@ final class _ValenceContextImpl implements ValenceContext {
 
   @override
   void clearDependents(int nodeId) {
+    if (nodeId >= _dependents.length) return;
+
     final deps = _dependents[nodeId];
 
     if (deps == null || deps.isEmpty) return;
 
     // For each dependent, remove the reverse (dependency) link.
     for (var i = 0; i < deps.length; i++) {
-      _dependencies[deps[i]]?.remove(nodeId);
+      final dependentId = deps[i];
+      if (dependentId < _dependencies.length) {
+        _dependencies[dependentId]?.remove(nodeId);
+      }
     }
 
     deps.clear();
@@ -331,8 +377,26 @@ final class _ValenceContextImpl implements ValenceContext {
     clearDependencies(nodeId);
     clearDependents(nodeId);
 
-    _dependents.remove(nodeId);
-    _dependencies.remove(nodeId);
-    _schedulables.remove(nodeId);
+    // Prevent the phantom node from executing if it's still in the
+    // ring buffer. The stale ID will be a no-op when popped.
+    final schedulable = nodeId < _schedulables.length
+        ? _schedulables[nodeId]
+        : null;
+    final isPhantom = schedulable != null && schedulable.isScheduled;
+
+    if (isPhantom) {
+      schedulable.isScheduled = false;
+    }
+
+    if (nodeId < _dependents.length) _dependents[nodeId] = null;
+    if (nodeId < _dependencies.length) _dependencies[nodeId] = null;
+    if (nodeId < _schedulables.length) _schedulables[nodeId] = null;
+
+    // Recycle the ID for future use, but only if it has no phantom entry
+    // sitting in the ring buffer. Phantom IDs are sacrificed to avoid the
+    // new node assigned that ID from receiving a spurious execution.
+    if (!isPhantom) {
+      _freeIds.add(nodeId);
+    }
   }
 }
