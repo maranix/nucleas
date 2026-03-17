@@ -1,5 +1,5 @@
-import 'package:nucleas/src/context.dart';
-import 'package:nucleas/src/scheduler.dart';
+import 'package:valence/src/context.dart';
+import 'package:valence/src/scheduler.dart';
 
 /// A **lazily recomputed**, cached derived value within the reactive graph.
 ///

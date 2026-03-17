@@ -1,18 +1,18 @@
-# Nucleas
+# Valence
 
 **High-performance, fine-grained reactive state for Dart & Flutter.**
 
-Nucleas is a signal-based reactive runtime designed for predictable updates, extremely low overhead, minimal allocations, and deterministic execution.
+Valence is a signal-based reactive runtime designed for predictable updates, extremely low overhead, minimal allocations, and deterministic execution.
 
 ---
 
 ## Installation
 
-Add `nucleas` to your `pubspec.yaml`:
+Add `valence` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  nucleas: ^1.0.0
+  valence: ^1.0.0
 ```
 
 Then run:
@@ -25,7 +25,7 @@ dart pub get
 
 ## Core Concepts
 
-Nucleas is built on three primitives.
+Valence is built on three primitives.
 
 ### Atom
 
@@ -81,7 +81,7 @@ counter.update((c) => c + 1); // Prints: Counter is: 1
 
 ## Mutation Model
 
-Nucleas enforces a **single mutation API** for atoms:
+Valence enforces a **single mutation API** for atoms:
 
 ```dart
 atom.update((current) => nextValue);
@@ -167,7 +167,7 @@ Effect(() {
 ## Example
 
 ```dart
-import 'package:nucleas/nucleas.dart';
+import 'package:valence/valence.dart';
 
 void main() {
   final price    = Atom<double>(10);
@@ -187,4 +187,4 @@ void main() {
 
 ## License
 
-Nucleas is released under the [MIT License](../../LICENSE).
+Valence is released under the [MIT License](../../LICENSE).

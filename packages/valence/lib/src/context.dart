@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:nucleas/src/list.dart';
-import 'package:nucleas/src/scheduler.dart';
+import 'package:valence/src/list.dart';
+import 'package:valence/src/scheduler.dart';
 
 /// The global [ReactiveContext] instance used by default when no explicit
 /// context is provided to [Atom], [Computed], or [Effect] constructors.

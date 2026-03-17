@@ -1,6 +1,6 @@
-# Nucleus
+# Valence
 
-**Nucleus** is a high-performance **fine-grained reactive runtime for Dart and Flutter** built around atomic state.
+**Valence** is a high-performance **fine-grained reactive runtime for Dart and Flutter** built around atomic state.
 
 The runtime focuses on **predictable updates, extremely low overhead, minimal allocations and deterministic execution**.
 
@@ -8,7 +8,7 @@ The runtime focuses on **predictable updates, extremely low overhead, minimal al
 
 # Core Concepts
 
-Nucleus is built on three primitives.
+Valence is built on three primitives.
 
 ## Atom
 
@@ -67,7 +67,7 @@ Effect(() {
 
 # Mutation Model
 
-Nucleus enforces a **single mutation API**.
+Valence enforces a **single mutation API**.
 
 ```dart
 atom.update(fn)
@@ -127,13 +127,13 @@ Computed recomputation
 Effects execution
 ```
 
-Nucleus uses a **lock-free RingBuffer scheduler** internally for extremely fast update propagation.
+Valence uses a **lock-free RingBuffer scheduler** internally for extremely fast update propagation.
 
 ---
 
 # Performance Goals
 
-Nucleus is designed for both UI and real-time systems.
+Valence is designed for both UI and real-time systems.
 
 Target characteristics:
 
@@ -182,7 +182,7 @@ Total: 30
 
 # Philosophy
 
-Nucleus follows a few core design principles:
+Valence follows a few core design principles:
 
 * **explicit mutation**
 * **pure derived computation**
@@ -224,4 +224,4 @@ Future capabilities may include:
 
 # License
 
-Nucleus is licensed under `MIT License`.
+Valence is licensed under `MIT License`.

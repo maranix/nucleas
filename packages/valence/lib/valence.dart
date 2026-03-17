@@ -1,7 +1,7 @@
-/// **Nucleas** — High-performance, fine-grained reactive state for Dart &
+/// **Valence** — High-performance, fine-grained reactive state for Dart &
 /// Flutter.
 ///
-/// Nucleas is a signal-based reactive runtime built around three primitives:
+/// Valence is a signal-based reactive runtime built around three primitives:
 ///
 /// * [Atom] — mutable reactive state.
 /// * [Computed] — lazily recomputed derived values.
@@ -14,7 +14,7 @@
 /// ## Quick start
 ///
 /// ```dart
-/// import 'package:nucleas/nucleas.dart';
+/// import 'package:valence/valence.dart';
 ///
 /// final count = Atom<int>(0);
 /// final doubled = Computed(() => count.value() * 2);

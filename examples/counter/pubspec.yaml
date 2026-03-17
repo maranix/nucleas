@@ -11,7 +11,7 @@ resolution: workspace
 
 # Add regular dependencies here.
 dependencies:
-  nucleas: any
+  valence: any
 
 dev_dependencies:
   lints: ^6.0.0
