@@ -43,8 +43,11 @@ abstract interface class Computed<T> implements SchedulableNode {
   /// initial dependencies and cache the first result.
   ///
   /// If [context] is `null`, [defaultValenceContext] is used.
-  factory Computed(T Function() computeFn, [ValenceContext? context]) =
-      _ComputedImpl;
+  factory Computed(
+    T Function() computeFn, {
+    ValenceContext? context,
+    bool Function(T a, T b)? equals,
+  }) = _ComputedImpl;
 
   /// Returns the cached value, recomputing first if dirty.
   ///
@@ -64,10 +67,12 @@ abstract interface class Computed<T> implements SchedulableNode {
 /// [value] is next read.
 final class _ComputedImpl<T> implements Computed<T> {
   _ComputedImpl(
-    T Function() computeFn, [
+    T Function() computeFn, {
     ValenceContext? context,
-  ]) : _fn = computeFn,
-       _context = context ?? defaultValenceContext {
+    bool Function(T a, T b)? equals,
+  }) : _fn = computeFn,
+       _context = context ?? defaultValenceContext,
+       _equals = equals ?? defaultEquals {
     _id = _context.registerNode();
     _context.registerSchedulableNode(_id, this);
 
@@ -80,6 +85,8 @@ final class _ComputedImpl<T> implements Computed<T> {
 
   /// The reactive context this node is registered with.
   final ValenceContext _context;
+
+  final bool Function(T a, T b) _equals;
 
   /// The unique node ID assigned by the context.
   late final int _id;
@@ -153,7 +160,7 @@ final class _ComputedImpl<T> implements Computed<T> {
 
     _recompute();
 
-    if (!defaultEquals(oldValue, _cached)) {
+    if (!_equals(oldValue, _cached)) {
       for (var i = 0; i < deps.length; i++) {
         _context.scheduleUpdate(deps[i]);
       }
