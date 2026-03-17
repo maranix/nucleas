@@ -1,5 +1,6 @@
 import 'package:valence/src/context.dart';
 import 'package:valence/src/scheduler.dart';
+import 'package:valence/src/utils.dart';
 
 /// A **lazily recomputed**, cached derived value within the reactive graph.
 ///
@@ -142,15 +143,20 @@ final class _ComputedImpl<T> implements Computed<T> {
 
     isScheduled = false;
 
-    // If already dirty there's nothing more to do — we'll recompute lazily
-    // when [value] is next called.
-    if (_dirty) return;
-    _dirty = true;
-
-    // Propagate the invalidation to downstream dependents.
     final deps = _context.getDependents(_id);
-    for (var i = 0; i < deps.length; i++) {
-      _context.scheduleUpdate(deps[i]);
+    if (deps.isEmpty) {
+      _dirty = true;
+      return;
+    }
+
+    final oldValue = _cached;
+
+    _recompute();
+
+    if (!defaultEquals(oldValue, _cached)) {
+      for (var i = 0; i < deps.length; i++) {
+        _context.scheduleUpdate(deps[i]);
+      }
     }
   }
 
