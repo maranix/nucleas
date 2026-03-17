@@ -46,9 +46,9 @@ typedef AtomMutator<T> = T Function(T currentValue);
 abstract interface class Atom<T> {
   /// Creates a new atom initialised to [value].
   ///
-  /// By default the atom uses [defaultReactiveContext]. Pass a custom
+  /// By default the atom uses [defaultValenceContext]. Pass a custom
   /// [context] if you need isolated reactive sub-systems (e.g. in tests).
-  factory Atom(T value, {ReactiveContext? context}) = _AtomImpl;
+  factory Atom(T value, {ValenceContext? context}) = _AtomImpl;
 
   /// Returns the current value and registers a dependency on this atom
   /// in the active tracking scope.
@@ -79,16 +79,16 @@ abstract interface class Atom<T> {
 
 /// Default implementation of [Atom].
 final class _AtomImpl<T> implements Atom<T> {
-  _AtomImpl(this._value, {ReactiveContext? context})
-    : _context = context ?? defaultReactiveContext {
+  _AtomImpl(this._value, {ValenceContext? context})
+    : _context = context ?? defaultValenceContext {
     _id = _context.registerNode();
   }
 
-  /// The unique node ID assigned by the [ReactiveContext].
+  /// The unique node ID assigned by the [ValenceContext].
   late final int _id;
 
   /// The reactive context this atom is registered with.
-  final ReactiveContext _context;
+  final ValenceContext _context;
 
   /// The current stored value.
   T _value;

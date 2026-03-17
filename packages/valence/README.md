@@ -125,10 +125,10 @@ Updates within the same microtask are batched automatically — multiple atom mu
 
 ## Custom Reactive Context
 
-By default all primitives share a global `defaultReactiveContext`. For testing or isolated sub-systems you can create your own:
+By default all primitives share a global `defaultValenceContext`. For testing or isolated sub-systems you can create your own:
 
 ```dart
-final ctx = ReactiveContext();
+final ctx = ValenceContext();
 
 final a = Atom<int>(0, context: ctx);
 final c = Computed(() => a.value() * 2, ctx);
@@ -147,7 +147,7 @@ Effect(() {
 | `Atom<T>`           | Mutable reactive state                            |
 | `Computed<T>`       | Lazy, cached derived value                        |
 | `Effect`            | Eager side-effect runner                           |
-| `ReactiveContext`   | Dependency graph & scheduler coordinator           |
+| `ValenceContext`   | Dependency graph & scheduler coordinator           |
 | `Scheduler`         | Ring-buffer FIFO queue for update scheduling        |
 | `SchedulableNode`   | Interface for nodes executable by the scheduler    |
 

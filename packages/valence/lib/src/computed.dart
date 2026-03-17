@@ -41,8 +41,8 @@ abstract interface class Computed<T> implements SchedulableNode {
   /// The function is invoked immediately during construction to establish
   /// initial dependencies and cache the first result.
   ///
-  /// If [context] is `null`, [defaultReactiveContext] is used.
-  factory Computed(T Function() computeFn, [ReactiveContext? context]) =
+  /// If [context] is `null`, [defaultValenceContext] is used.
+  factory Computed(T Function() computeFn, [ValenceContext? context]) =
       _ComputedImpl;
 
   /// Returns the cached value, recomputing first if dirty.
@@ -64,9 +64,9 @@ abstract interface class Computed<T> implements SchedulableNode {
 final class _ComputedImpl<T> implements Computed<T> {
   _ComputedImpl(
     T Function() computeFn, [
-    ReactiveContext? context,
+    ValenceContext? context,
   ]) : _fn = computeFn,
-       _context = context ?? defaultReactiveContext {
+       _context = context ?? defaultValenceContext {
     _id = _context.registerNode();
     _context.registerSchedulableNode(_id, this);
 
@@ -78,7 +78,7 @@ final class _ComputedImpl<T> implements Computed<T> {
   final T Function() _fn;
 
   /// The reactive context this node is registered with.
-  final ReactiveContext _context;
+  final ValenceContext _context;
 
   /// The unique node ID assigned by the context.
   late final int _id;
@@ -97,7 +97,7 @@ final class _ComputedImpl<T> implements Computed<T> {
   ///
   /// Dependencies are re-established from scratch on each call to
   /// [_recompute] by wrapping the function invocation in a
-  /// [ReactiveContext.startTracking] / [ReactiveContext.endTracking] pair.
+  /// [ValenceContext.startTracking] / [ValenceContext.endTracking] pair.
   void _recompute() {
     _context.clearDependencies(_id);
 

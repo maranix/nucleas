@@ -3,17 +3,17 @@ import 'dart:async';
 import 'package:valence/src/list.dart';
 import 'package:valence/src/scheduler.dart';
 
-/// The global [ReactiveContext] instance used by default when no explicit
+/// The global [ValenceContext] instance used by default when no explicit
 /// context is provided to [Atom], [Computed], or [Effect] constructors.
 ///
 /// Most applications will use this single shared context. Custom contexts
 /// are primarily useful for testing or for isolating independent reactive
 /// sub-systems.
-final defaultReactiveContext = ReactiveContext();
+final defaultValenceContext = ValenceContext();
 
 /// The central coordinator for the reactive dependency graph.
 ///
-/// A [ReactiveContext] owns the graph topology (which nodes depend on which),
+/// A [ValenceContext] owns the graph topology (which nodes depend on which),
 /// manages dependency tracking during computation, and schedules deferred
 /// updates via a [Scheduler].
 ///
@@ -26,12 +26,12 @@ final defaultReactiveContext = ReactiveContext();
 /// 4. During [flush], each enqueued [SchedulableNode] is executed in FIFO
 ///    order — [Computed] nodes mark themselves dirty and propagate further,
 ///    while [Effect] nodes re-run their side-effect function.
-abstract interface class ReactiveContext {
-  /// Creates a new [ReactiveContext] backed by the given [scheduler].
+abstract interface class ValenceContext {
+  /// Creates a new [ValenceContext] backed by the given [scheduler].
   ///
   /// If [scheduler] is `null`, a default [Scheduler] with capacity 1024 is
   /// used.
-  factory ReactiveContext([Scheduler? scheduler]) = _ReactiveContextImpl;
+  factory ValenceContext([Scheduler? scheduler]) = _ValenceContextImpl;
 
   /// Allocates a unique integer ID for a new reactive node and initialises
   /// its dependency/dependent storage.
@@ -101,7 +101,7 @@ abstract interface class ReactiveContext {
   void disposeNode(int nodeId);
 }
 
-/// Default implementation of [ReactiveContext].
+/// Default implementation of [ValenceContext].
 ///
 /// Maintains the dependency graph as two parallel maps:
 ///
@@ -113,8 +113,8 @@ abstract interface class ReactiveContext {
 /// A call stack (`_compStack`) tracks which [Computed] or [Effect] is
 /// currently being evaluated so that [trackRead] knows where to record the
 /// dependency.
-final class _ReactiveContextImpl implements ReactiveContext {
-  _ReactiveContextImpl([Scheduler? scheduler])
+final class _ValenceContextImpl implements ValenceContext {
+  _ValenceContextImpl([Scheduler? scheduler])
     : _scheduler = scheduler ?? Scheduler();
 
   /// Monotonically increasing counter for assigning unique node IDs.

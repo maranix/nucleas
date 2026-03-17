@@ -3,7 +3,7 @@ import 'dart:typed_data';
 /// An interface for reactive nodes that can be scheduled for execution.
 ///
 /// Both [Computed] and [Effect] implement this interface so that the
-/// [ReactiveContext] can enqueue them for deferred execution during a flush
+/// [ValenceContext] can enqueue them for deferred execution during a flush
 /// cycle.
 abstract interface class SchedulableNode {
   /// Whether this node is currently enqueued in the scheduler.
@@ -15,7 +15,7 @@ abstract interface class SchedulableNode {
   /// Sets the scheduling state of this node.
   set isScheduled(bool value);
 
-  /// Called by the scheduler during a [ReactiveContext.flush] cycle.
+  /// Called by the scheduler during a [ValenceContext.flush] cycle.
   ///
   /// For [Computed] nodes this marks the value as dirty and propagates
   /// invalidation to downstream dependents. For [Effect] nodes this
@@ -36,7 +36,8 @@ abstract interface class Scheduler {
   /// [capacity] must be a positive power of two (e.g. 1024, 2048).
   /// Defaults to `1024`, which supports up to 1 024 pending updates per
   /// flush cycle.
-  factory Scheduler([int capacity = 1024]) => _RingBufferSchedulerImpl(capacity);
+  factory Scheduler([int capacity = 1024]) =>
+      _RingBufferSchedulerImpl(capacity);
 
   /// Whether the queue is empty.
   bool get isEmpty;

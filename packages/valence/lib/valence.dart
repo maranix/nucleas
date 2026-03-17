@@ -8,7 +8,7 @@
 /// * [Effect] — eager side-effects that re-run on dependency changes.
 ///
 /// All reactive updates flow through a dependency graph managed by a
-/// [ReactiveContext] and are batched via a lock-free ring-buffer
+/// [ValenceContext] and are batched via a lock-free ring-buffer
 /// [Scheduler] for minimal allocation overhead.
 ///
 /// ## Quick start
@@ -29,8 +29,16 @@
 /// See the package README for a full guide.
 library;
 
+import 'package:valence/src/context.dart';
+
 export 'src/atom.dart';
 export 'src/computed.dart';
-export 'src/context.dart' show ReactiveContext, defaultReactiveContext;
+export 'src/context.dart' show ValenceContext;
 export 'src/effect.dart';
 export 'src/scheduler.dart' show Scheduler, SchedulableNode;
+
+abstract final class Valence {
+  /// Drains the scheduler queue and executes all pending [SchedulableNode]s
+  /// in FIFO order.
+  static void flush() => defaultValenceContext.flush();
+}

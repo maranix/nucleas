@@ -38,8 +38,8 @@ abstract interface class Effect implements SchedulableNode {
   /// The function is invoked **immediately** during construction to establish
   /// initial dependencies and perform the first side-effect.
   ///
-  /// If [context] is `null`, [defaultReactiveContext] is used.
-  factory Effect(void Function() effectFn, [ReactiveContext? context]) =
+  /// If [context] is `null`, [defaultValenceContext] is used.
+  factory Effect(void Function() effectFn, [ValenceContext? context]) =
       _EffectImpl;
 
   /// Removes this effect from the dependency graph and prevents future
@@ -55,9 +55,9 @@ abstract interface class Effect implements SchedulableNode {
 final class _EffectImpl implements Effect {
   _EffectImpl(
     void Function() effectFn, [
-    ReactiveContext? context,
+    ValenceContext? context,
   ]) : _fn = effectFn,
-       _context = context ?? defaultReactiveContext {
+       _context = context ?? defaultValenceContext {
     _id = _context.registerNode();
     _context.registerSchedulableNode(_id, this);
 
@@ -69,7 +69,7 @@ final class _EffectImpl implements Effect {
   final void Function() _fn;
 
   /// The reactive context this effect is registered with.
-  final ReactiveContext _context;
+  final ValenceContext _context;
 
   /// The unique node ID assigned by the context.
   late final int _id;
