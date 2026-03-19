@@ -187,7 +187,7 @@ final class _GrowableRingBufferSchedulerImpl implements Scheduler {
   void push(int nodeId) {
     if (isFull) {
       final int oldLength = _data.length;
-      final Uint32List newData = .new(_data.length * 2);
+      final Uint32List newData = .new(_data.length << 1);
 
       // Copy the elements from the old buffer to the new buffer in logical order
       for (var i = 0; i < oldLength; i++) {
