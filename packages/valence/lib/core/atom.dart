@@ -4,7 +4,7 @@ import 'package:valence/core/interface.dart';
 import 'package:valence/types.dart';
 import 'package:valence/utils/equality.dart';
 
-final class Atom<T> extends BaseProducer implements Readable<T>, Mutable<T> {
+final class Atom<T> extends BaseProducer {
   Atom(this._value, {ValenceContext? ctx, EqualityFn? eq})
     : _ctx = ctx ?? Valence.ctx,
       _eq = eq ?? defaultEquals;
@@ -15,14 +15,12 @@ final class Atom<T> extends BaseProducer implements Readable<T>, Mutable<T> {
 
   T _value;
 
-  @override
   T value() {
     _ctx.startTracking(this);
 
     return _value;
   }
 
-  @override
   void update(MutatorFn<T> fn) {
     final next = fn(_value);
 

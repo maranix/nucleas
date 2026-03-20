@@ -1,7 +1,13 @@
 import 'dart:async';
 
 import 'package:valence/core/effect.dart';
-import 'package:valence/core/interface.dart';
+
+
+abstract interface class Schedular {
+  bool get isScheduled;
+  void schedule(Effect o);
+  void flush();
+}
 
 final class EffectQueue {
   List<Effect?> _buffer;
@@ -51,7 +57,7 @@ final class EffectQueue {
 final class ValenceSchedular implements Schedular {
   final EffectQueue _effectQueue = EffectQueue(1024);
 
-  int _epoch = 1;
+
 
   bool _isScheduled = false;
 
@@ -60,9 +66,6 @@ final class ValenceSchedular implements Schedular {
 
   @override
   void schedule(Effect s) {
-    if (s.queueEpoch == _epoch) return;
-
-    s.setQueueEpoch(_epoch);
     _effectQueue.push(s);
 
     flush();
@@ -86,7 +89,5 @@ final class ValenceSchedular implements Schedular {
 
       effect.run();
     }
-
-    _epoch++;
   }
 }

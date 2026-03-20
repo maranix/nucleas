@@ -3,7 +3,7 @@ import 'package:valence/core/context.dart';
 import 'package:valence/core/interface.dart';
 import 'package:valence/types.dart';
 
-final class Effect implements Observer, SideEffect {
+final class Effect with BaseObserver {
   Effect(this._fn, {ValenceContext? ctx}) : _ctx = ctx ?? Valence.ctx {
     _ctx.schedular.schedule(this);
   }
@@ -12,61 +12,36 @@ final class Effect implements Observer, SideEffect {
 
   final ValenceContext _ctx;
 
-  List<Producer> _deps = [];
-  List<Producer> _oldDeps = [];
+  @override
+  ValenceContext get ctx => _ctx;
 
   bool _dirty = true;
+  bool _isScheduled = false;
 
-  int _queueEpoch = 0;
+  bool get isScheduled => _isScheduled;
 
-  @override
-  int get queueEpoch => _queueEpoch;
-
-  @override
-  void setQueueEpoch(int epoch) {
-    _queueEpoch = epoch;
+  void setScheduled(bool value) {
+    _isScheduled = value;
   }
 
   @override
   void markDirty() {
-    if (_dirty) return;
+    if (_dirty && _isScheduled) return;
 
     _dirty = true;
-
-    _ctx.schedular.schedule(this);
+    
+    if (!_isScheduled) {
+      _isScheduled = true;
+      _ctx.schedular.schedule(this);
+    }
   }
 
-  // Register dependency on Producer
-  @override
-  void dependOn(Producer p) {
-    final epoch = _ctx.markEpoch;
-    if (p.mark == epoch) return;
-
-    _deps.add(p);
-    p.addSub(this, epoch);
-  }
-
-  @override
   void run() {
     if (!_dirty) return;
 
     _dirty = false;
+    _isScheduled = false;
 
-    _ctx.push(this);
-
-    final epoch = _ctx.updateMarkEpoch();
-
-    _oldDeps = _deps;
-    _deps = [];
-
-    _fn();
-
-    _ctx.pop();
-
-    for (final dep in _oldDeps) {
-      if (dep.mark != epoch) {
-        dep.removeSub(this);
-      }
-    }
+    trackDependencies(_fn);
   }
 }

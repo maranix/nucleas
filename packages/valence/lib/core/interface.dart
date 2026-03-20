@@ -1,5 +1,4 @@
-import 'package:valence/core/effect.dart';
-import 'package:valence/types.dart';
+import 'package:valence/core/context.dart';
 
 abstract interface class Producer {
   int get version;
@@ -18,26 +17,39 @@ abstract interface class Observer {
   void markDirty();
 }
 
-abstract interface class Mutable<T> {
-  void update(MutatorFn<T> fn);
-}
+mixin BaseObserver implements Observer {
+  List<Producer> _deps = [];
+  List<Producer> _oldDeps = [];
 
-abstract interface class Readable<T> {
-  T value();
-}
+  ValenceContext get ctx;
 
-abstract interface class SideEffect {
-  int get queueEpoch;
+  @override
+  void dependOn(Producer p) {
+    final epoch = ctx.markEpoch;
+    if (p.mark == epoch) return;
 
-  void setQueueEpoch(int epoch);
+    _deps.add(p);
+    p.addSub(this, epoch);
+  }
 
-  void run();
-}
+  void trackDependencies(void Function() compute) {
+    ctx.push(this);
 
-abstract interface class Schedular {
-  bool get isScheduled;
-  void schedule(Effect o);
-  void flush();
+    final epoch = ctx.updateMarkEpoch();
+
+    _oldDeps = _deps;
+    _deps = [];
+
+    compute();
+
+    ctx.pop();
+
+    for (final dep in _oldDeps) {
+      if (dep.mark != epoch) {
+        dep.removeSub(this);
+      }
+    }
+  }
 }
 
 abstract base class BaseProducer implements Producer {
