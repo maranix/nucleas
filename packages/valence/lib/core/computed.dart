@@ -60,9 +60,7 @@ final class Computed<T> extends BaseProducer implements Observer, Readable<T> {
     if (p.mark == epoch) return;
 
     _deps.add(p);
-    p
-      ..updateMark(epoch)
-      ..addSub(this, epoch);
+    p.addSub(this, epoch);
   }
 
   @override

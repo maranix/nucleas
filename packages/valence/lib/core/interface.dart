@@ -7,7 +7,6 @@ abstract interface class Producer {
   int get subEpoch;
 
   void updateVersion();
-  void updateMark(int epoch);
   void updateSubEpoch(int epoch);
 
   void addSub(Observer o, int epoch);
@@ -60,6 +59,8 @@ abstract base class BaseProducer implements Producer {
 
   @override
   void addSub(Observer o, int epoch) {
+    _mark = epoch;
+
     if (_subEpoch == epoch) return;
 
     _subEpoch = epoch;
@@ -71,9 +72,6 @@ abstract base class BaseProducer implements Producer {
 
   @override
   void updateVersion() => _version++;
-
-  @override
-  void updateMark(int epoch) => _mark = epoch;
 
   @override
   void updateSubEpoch(int epoch) => _subEpoch = epoch;

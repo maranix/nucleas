@@ -43,9 +43,7 @@ final class Effect implements Observer, SideEffect {
     if (p.mark == epoch) return;
 
     _deps.add(p);
-    p
-      ..updateMark(epoch)
-      ..addSub(this, epoch);
+    p.addSub(this, epoch);
   }
 
   @override

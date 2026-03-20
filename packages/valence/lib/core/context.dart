@@ -59,7 +59,6 @@ final class _ValenceContextImpl implements ValenceContext {
   @override
   void startTracking(Producer p) {
     if (current != null) {
-      p.updateMark(_markEpoch);
       requireCurrent.dependOn(p);
     }
   }
