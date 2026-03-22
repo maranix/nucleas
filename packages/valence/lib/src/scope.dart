@@ -4,29 +4,33 @@ import 'store.dart';
 import 'derive.dart';
 
 final class Scope {
-  Scope._root() : _isRoot = true, _parent = null;
-  Scope._child(this._parent) : _isRoot = false;
+  Scope._root() : _isRoot = true {
+    _core = this;
+  }
+  Scope._child(Scope parent) : _isRoot = false {
+    _core = parent._core;
+  }
 
   factory Scope({Scope? parent}) => Scope._child(parent ?? Valence.root);
 
   final bool _isRoot;
-  final Scope? _parent;
 
-  Scope get _core => _parent?._core ?? this;
+  late final Scope _core;
 
   // --- Execution & Tracking State ---
 
-  final List<List<Node>> trackingStack = [];
-  bool get isTracking => _core.trackingStack.isNotEmpty;
+  final List<List<Node>> _trackingStack = [];
 
-  void beginTracking() => _core.trackingStack.add(<Node>[]);
+  bool get isTracking => _core._trackingStack.isNotEmpty;
 
-  List<Node> endTracking() => _core.trackingStack.removeLast();
+  void beginTracking() => _core._trackingStack.add([]);
+
+  List<Node> endTracking() => _core._trackingStack.removeLast();
 
   void recordRead(Node node) {
-    if (_core.trackingStack.isEmpty) return;
+    if (_core._trackingStack.isEmpty) return;
 
-    final list = _core.trackingStack.last;
+    final list = _core._trackingStack.last;
     for (var i = 0; i < list.length; i++) {
       if (identical(list[i], node)) return;
     }
@@ -63,14 +67,13 @@ final class Scope {
   }
 
   void flushPending() {
-    while (_core._pendingList.isNotEmpty) {
-      final snapshot = List<ReactiveNode>.of(_core._pendingList);
-      _core._pendingList.clear();
-      for (final node in snapshot) {
-        node.isPending = false;
-        node.recompute();
-      }
+    var i = 0;
+    while (i < _core._pendingList.length) {
+      final node = _core._pendingList[i++];
+      node.isPending = false;
+      node.recompute();
     }
+    _core._pendingList.clear();
   }
 
   // --- Ownership ---

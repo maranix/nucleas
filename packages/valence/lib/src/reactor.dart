@@ -12,9 +12,11 @@ final class Reactor implements ReactiveNode {
   final VoidCallback _fn;
 
   int _depth = 0;
+
   @override
   bool isPending = false;
-  List<Node> _deps = [];
+
+  List<Node> _dependencies = [];
 
   @override
   int get depth => _depth;
@@ -26,44 +28,67 @@ final class Reactor implements ReactiveNode {
   void removeDependent(ReactiveNode node) {}
 
   @override
-  void recompute() {
-    run();
-  }
+  void recompute() => run();
 
   void run() {
     _scope.beginTracking();
     try {
       _fn();
     } finally {
-      final newDeps = _scope.endTracking();
-      _updateDeps(newDeps);
+      final newDependencies = _scope.endTracking();
+      if (!_dependenciesUnchanged(newDependencies)) {
+        _updateDependencies(newDependencies);
+      }
     }
   }
 
-  void _updateDeps(List<Node> newDeps) {
-    for (var i = 0; i < _deps.length; i++) {
-      final dep = _deps[i];
-      if (!newDeps.contains(dep)) {
-        dep.removeDependent(this);
-      }
+  void _updateDependencies(List<Node> newDependencies) {
+    if (_dependenciesUnchanged(newDependencies)) {
+      _updateDepth(newDependencies);
+      return;
     }
+
+    final newSet = newDependencies.toSet();
+    final oldSet = _dependencies.toSet();
+
+    for (final dep in newSet) {
+      if (!oldSet.contains(dep)) dep.addDependent(this);
+    }
+
+    for (final dep in oldSet) {
+      if (!newSet.contains(dep)) dep.removeDependent(this);
+    }
+
+    _dependencies = newDependencies;
+    _updateDepth(newDependencies);
+  }
+
+  bool _dependenciesUnchanged(List<Node> newDependencies) {
+    if (newDependencies.length != _dependencies.length) return false;
+
+    for (var i = 0; i < newDependencies.length; i++) {
+      if (!identical(newDependencies[i], _dependencies[i])) return false;
+    }
+
+    return true;
+  }
+
+  void _updateDepth(List<Node> dependencies) {
     var maxDepth = 0;
-    for (var i = 0; i < newDeps.length; i++) {
-      final dep = newDeps[i];
-      if (!_deps.contains(dep)) {
-        dep.addDependent(this);
-      }
+    for (var i = 0; i < dependencies.length; i++) {
+      final dep = dependencies[i];
+
       final d = dep is ReactiveNode ? dep.depth : 0;
       if (d > maxDepth) maxDepth = d;
     }
-    _deps = newDeps;
+
     _depth = maxDepth + 1;
   }
 
   void dispose() {
-    for (final dep in _deps) {
+    for (final dep in _dependencies) {
       dep.removeDependent(this);
     }
-    _deps.clear();
+    _dependencies.clear();
   }
 }

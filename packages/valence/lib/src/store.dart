@@ -20,7 +20,13 @@ final class Store<S> implements Node {
   void addDependent(ReactiveNode node) => _dependents.add(node);
 
   @override
-  void removeDependent(ReactiveNode node) => _dependents.remove(node);
+  void removeDependent(ReactiveNode node) {
+    final i = _dependents.indexOf(node);
+    if (i < 0) return;
+
+    _dependents[i] = _dependents.last;
+    _dependents.removeLast();
+  }
 
   S call() {
     _scope.recordRead(this);
@@ -42,6 +48,7 @@ final class Store<S> implements Node {
     for (var i = 0; i < _dependents.length; i++) {
       _scope.enqueue(_dependents[i]);
     }
+
     if (!_scope.isBatching) _scope.flushPending();
   }
 
