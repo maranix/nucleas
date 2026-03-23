@@ -1,8 +1,8 @@
 library;
 
-export 'src/reducer.dart';
-export 'src/store.dart' show Store;
-export 'src/derive.dart' show Derive;
-export 'src/reactor.dart' show Reactor;
-export 'src/scope.dart' show Scope, Valence;
-export 'src/api.dart';
+export 'src/primitive/reducer.dart' show Reducer;
+export 'src/primitive/store.dart' show Store, store;
+export 'src/primitive/derive.dart' show Derive, derive;
+export 'src/primitive/reactor.dart' show Reactor, reactor;
+export 'src/engine/scope.dart' show Scope;
+export 'src/primitive/batch.dart' show batch;

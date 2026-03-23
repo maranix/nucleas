@@ -1,17 +1,26 @@
 import 'package:valence/types.dart';
 import 'package:valence/utils/equality.dart';
 
-import 'core.dart';
-import 'scope.dart';
+import '../engine/node.dart';
+import '../config.dart';
+import '../engine/scope.dart';
+
+Derive<T> derive<T>(
+  ValueCallback<T> fn, {
+  Scope? scope,
+  EqualityCallback<T>? equals,
+}) => Derive<T>(fn, scope: scope, equals: equals);
 
 final class Derive<T> implements ReactiveNode {
-  Derive(this._scope, this._compute, {EqualityCallback<T>? equals})
-    : _equals = equals ?? defaultEquals {
-    _scope.beginTracking();
+  Derive(this._compute, {Scope? scope, EqualityCallback<T>? equals})
+    : _scope = scope ?? Valence.root,
+      _equals = equals ?? defaultEquals {
+    _scope.registerDerive(this);
+    _scope.graph.beginTracking();
     try {
       _cachedValue = _compute();
     } finally {
-      final deps = _scope.endTracking();
+      final deps = _scope.graph.endTracking();
       _updateDependencies(deps);
     }
   }
@@ -41,7 +50,7 @@ final class Derive<T> implements ReactiveNode {
   void removeDependent(ReactiveNode node) => _dependents.remove(node);
 
   T call() {
-    _scope.recordRead(this);
+    _scope.graph.recordSource(this);
     return _cachedValue as T;
   }
 
@@ -56,17 +65,17 @@ final class Derive<T> implements ReactiveNode {
     _cachedValue = next;
 
     for (var i = 0; i < _dependents.length; i++) {
-      _scope.enqueue(_dependents[i]);
+      _scope.schedular.enqueue(_dependents[i]);
     }
   }
 
   T _retrackAndCompute() {
-    _scope.beginTracking();
+    _scope.graph.beginTracking();
 
     try {
       return _compute();
     } finally {
-      final newDependencies = _scope.endTracking();
+      final newDependencies = _scope.graph.endTracking();
       if (!_dependenciesUnchanged(newDependencies)) {
         _updateDependencies(newDependencies);
         _isStable = false;

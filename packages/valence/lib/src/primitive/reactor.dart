@@ -1,10 +1,17 @@
 import 'package:valence/types.dart';
 
-import 'core.dart';
-import 'scope.dart';
+import '../engine/node.dart';
+import '../config.dart';
+import '../engine/scope.dart';
+
+Reactor reactor(
+  VoidCallback fn, {
+  Scope? scope,
+}) => Reactor(fn, scope: scope);
 
 final class Reactor implements ReactiveNode {
-  Reactor(this._scope, this._fn) {
+  Reactor(this._fn, {Scope? scope}) : _scope = scope ?? Valence.root {
+    _scope.registerReactor(this);
     run();
   }
 
@@ -32,20 +39,20 @@ final class Reactor implements ReactiveNode {
   @override
   void recompute() {
     if (_isStable) {
-      _scope.beginVerify(_dependencies);
+      _scope.graph.beginProbe(_dependencies);
       _fn();
-      if (_scope.endVerify(_dependencies.length)) return;
+      if (_scope.graph.endProbe(_dependencies.length)) return;
       _isStable = false;
     }
     run();
   }
 
   void run() {
-    _scope.beginTracking();
+    _scope.graph.beginTracking();
     try {
       _fn();
     } finally {
-      final newDependencies = _scope.endTracking();
+      final newDependencies = _scope.graph.endTracking();
       if (!_dependenciesUnchanged(newDependencies)) {
         _updateDependencies(newDependencies);
       }
