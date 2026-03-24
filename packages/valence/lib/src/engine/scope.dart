@@ -1,6 +1,7 @@
 import 'package:graphs/graphs.dart' as graphs;
 
 import 'package:valence/src/engine/graph.dart';
+import 'package:valence/src/engine/id_pool.dart';
 import 'package:valence/src/engine/node.dart';
 import 'package:valence/src/engine/schedular.dart';
 
@@ -9,6 +10,7 @@ abstract interface class Scope {
 
   Graph get graph;
   Schedular get schedular;
+  IdPool get idPool;
 
   void addRoot(Source source);
   void dispose();
@@ -17,10 +19,12 @@ abstract interface class Scope {
 final class _ScopeImpl implements Scope {
   _ScopeImpl({Graph? graph, Schedular? schedular})
     : _graph = graph ?? Graph(),
-      _schedular = schedular ?? Schedular();
+      _schedular = schedular ?? Schedular(),
+      _idPool = IdPool();
 
   final Graph _graph;
   final Schedular _schedular;
+  final IdPool _idPool;
 
   final List<Source> _roots = [];
 
@@ -29,6 +33,9 @@ final class _ScopeImpl implements Scope {
 
   @override
   Schedular get schedular => _schedular;
+
+  @override
+  IdPool get idPool => _idPool;
 
   @override
   void addRoot(Source source) => _roots.add(source);

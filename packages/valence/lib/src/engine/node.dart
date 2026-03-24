@@ -26,6 +26,8 @@ abstract interface class Source implements Node {
 /// A [Dependent] listens to sources and other dependents and reacts to their
 /// changes, typically by scheduling a recomputation of its own state.
 abstract interface class Dependent implements Node {
+  int get id;
+
   /// The depth of this node in the dependency graph.
   ///
   /// This is used for topological sorting during the update phase to ensure

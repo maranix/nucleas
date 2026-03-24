@@ -42,10 +42,25 @@ abstract base class BaseSource<S> implements Source {
 }
 
 abstract base class BaseDependent with DependentMixin {
-  BaseDependent({Scope? scope}) : _scope = scope ?? Valence.root;
+  BaseDependent({Scope? scope}) : _scope = scope ?? Valence.root {
+    _id = _scope.idPool.acquire();
+  }
+
+  late final int _id;
+
+  @override
+  int get id => _id;
 
   @override
   final Scope _scope;
+
+  @override
+  void dispose() {
+    _unsubcribeFromSources();
+
+    _scope.schedular.cancel(id);
+    _scope.idPool.release(id);
+  }
 }
 
 mixin DependentMixin implements Dependent {
@@ -113,8 +128,7 @@ mixin DependentMixin implements Dependent {
     _depth = maxDepth + 1;
   }
 
-  @override
-  void dispose() {
+  void _unsubcribeFromSources() {
     for (final source in _sources) {
       source.removeDependent(this);
     }

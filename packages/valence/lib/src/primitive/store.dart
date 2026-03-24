@@ -29,16 +29,21 @@ final class Store<S> extends BaseSource<S> {
     _history.add(_value);
     _value = next;
 
-    for (var i = 0; i < _dependents.length; i++) {
-      _scope.schedular.enqueue(_dependents[i]);
-    }
+    _scope.schedular.batch(() {
+      for (var i = 0; i < _dependents.length; i++) {
+        _scope.schedular.enqueue(_dependents[i]);
+      }
+    });
   }
 
   void undo() {
     if (_history.isEmpty) return;
     _value = _history.removeLast();
-    for (var i = 0; i < _dependents.length; i++) {
-      _scope.schedular.enqueue(_dependents[i]);
-    }
+
+    _scope.schedular.batch(() {
+      for (var i = 0; i < _dependents.length; i++) {
+        _scope.schedular.enqueue(_dependents[i]);
+      }
+    });
   }
 }

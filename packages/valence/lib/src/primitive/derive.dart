@@ -9,7 +9,13 @@ Derive<T> derive<T>(
 final class Derive<T> extends BaseSource<T> with DependentMixin {
   Derive(this._compute, {super.scope, super.equals}) {
     _cachedValue = _retrackAndCompute();
+    _id = _scope.idPool.acquire();
   }
+
+  late final int _id;
+
+  @override
+  int get id => _id;
 
   final ValueCallback<T> _compute;
 
@@ -53,11 +59,10 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
 
   @override
   void dispose() {
-    for (final source in _sources) {
-      source.removeDependent(this);
-    }
+    _unsubcribeFromSources();
 
-    _sources.clear();
-    _dependents.clear();
+    _scope.schedular.cancel(id);
+    _scope.idPool.release(id);
+    super.dispose();
   }
 }
