@@ -1,10 +1,4 @@
-import 'package:valence/types.dart';
-import 'package:valence/utils/equality.dart';
-
-import '../engine/node.dart';
-import '../config.dart';
-import '../engine/scope.dart';
-import 'reducer.dart';
+part of 'base.dart';
 
 Store<S> store<S>(
   S initial, {
@@ -12,34 +6,11 @@ Store<S> store<S>(
   EqualityCallback<S>? equals,
 }) => Store<S>(initial, scope: scope, equals: equals);
 
-final class Store<S> implements Source {
-  Store(this._value, {Scope? scope, EqualityCallback<S>? equals})
-    : _scope = scope ?? Valence.root,
-      _equals = equals ?? defaultEquals {
-    _scope.addRoot(this);
-  }
+final class Store<S> extends BaseSource<S> {
+  Store(this._value, {super.scope, super.equals});
 
-  final Scope _scope;
   S _value;
-
-  final EqualityCallback<S> _equals;
   final List<S> _history = [];
-  final List<Dependent> _dependents = [];
-
-  @override
-  Iterable<Dependent> get dependents => _dependents;
-
-  @override
-  void addDependent(Dependent node) => _dependents.add(node);
-
-  @override
-  void removeDependent(Dependent node) {
-    final i = _dependents.indexOf(node);
-    if (i < 0) return;
-
-    _dependents[i] = _dependents.last;
-    _dependents.removeLast();
-  }
 
   S call() {
     _scope.graph.recordSource(this);
@@ -73,7 +44,4 @@ final class Store<S> implements Source {
     }
     if (!_scope.schedular.isBatching) _scope.schedular.flush();
   }
-
-  @override
-  void dispose() => _dependents.clear();
 }

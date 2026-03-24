@@ -1,10 +1,4 @@
-import 'dart:math' as math;
-
-import 'package:valence/types.dart';
-
-import '../engine/node.dart';
-import '../config.dart';
-import '../engine/scope.dart';
+part of 'base.dart';
 
 /// Creates a new [Reactor].
 ///
@@ -28,33 +22,15 @@ Reactor reactor(
 /// to check stability before committing to a full run — avoiding
 /// unnecessary work when the source set has not changed.
 /// {@endtemplate}
-final class Reactor implements Dependent {
+final class Reactor extends BaseDependent {
   /// Creates a new [Reactor].
   ///
   /// {@macro valence.Reactor}
-  Reactor(this._fn, {Scope? scope}) : _scope = scope ?? Valence.root {
+  Reactor(this._fn, {super.scope}) {
     run();
   }
 
-  final Scope _scope;
   final VoidCallback _fn;
-
-  int _depth = 0;
-
-  /// Whether this node's source set is stable from the last run.
-  ///
-  /// When true, [recompute] will first probe the existing sources
-  /// before committing to a full re-run. Set to false whenever
-  /// the source set changes.
-  bool _isStable = false;
-
-  @override
-  bool isPending = false;
-
-  List<Source> _sources = [];
-
-  @override
-  int get depth => _depth;
 
   /// Runs the effect, tracking any [Source]s read during execution.
   ///
@@ -85,61 +61,5 @@ final class Reactor implements Dependent {
       _isStable = false;
     }
     run();
-  }
-
-  void _updateSources(List<Source> sources) {
-    final derives = sources.whereType<Dependent>();
-
-    if (_sourcesUnchanged(sources)) {
-      _updateDepth(derives);
-      return;
-    }
-
-    final newSet = sources.toSet();
-    final oldSet = _sources.toSet();
-
-    for (final dep in newSet) {
-      if (!oldSet.contains(dep)) dep.addDependent(this);
-    }
-
-    for (final dep in oldSet) {
-      if (!newSet.contains(dep)) dep.removeDependent(this);
-    }
-
-    _sources = sources;
-
-    _updateDepth(derives);
-  }
-
-  bool _sourcesUnchanged(List<Source> sources) {
-    if (sources.length != _sources.length) return false;
-
-    for (var i = 0; i < sources.length; i++) {
-      if (!identical(sources[i], _sources[i])) return false;
-    }
-
-    return true;
-  }
-
-  /// Runs the effect, tracking any [Source]s read during execution.
-  ///
-  /// After the run, subscribes to any new sources, unsubscribes from
-  /// any dropped ones, and updates [depth] based on the new source set.
-  void _updateDepth(Iterable<Dependent> dependents) {
-    var maxDepth = 0;
-
-    for (final dependent in dependents) {
-      maxDepth = math.max(dependent.depth, maxDepth);
-    }
-
-    _depth = maxDepth + 1;
-  }
-
-  @override
-  void dispose() {
-    for (final source in _sources) {
-      source.removeDependent(this);
-    }
-    _sources.clear();
   }
 }

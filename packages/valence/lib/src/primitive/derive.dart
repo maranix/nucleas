@@ -1,10 +1,4 @@
-import 'dart:math' as math;
-import 'package:valence/types.dart';
-import 'package:valence/utils/equality.dart';
-
-import '../engine/node.dart';
-import '../config.dart';
-import '../engine/scope.dart';
+part of 'base.dart';
 
 Derive<T> derive<T>(
   ValueCallback<T> fn, {
@@ -12,40 +6,14 @@ Derive<T> derive<T>(
   EqualityCallback<T>? equals,
 }) => Derive<T>(fn, scope: scope, equals: equals);
 
-final class Derive<T> implements Source, Dependent {
-  Derive(this._compute, {Scope? scope, EqualityCallback<T>? equals})
-    : _scope = scope ?? Valence.root,
-      _equals = equals ?? defaultEquals {
-    _scope.addRoot(this);
+final class Derive<T> extends BaseSource<T> with DependentMixin {
+  Derive(this._compute, {super.scope, super.equals}) {
     _cachedValue = _retrackAndCompute();
   }
 
-  final Scope _scope;
   final ValueCallback<T> _compute;
-  final EqualityCallback<T> _equals;
 
   T? _cachedValue;
-  int _depth = 0;
-
-  bool _isStable = false;
-
-  List<Source> _sources = [];
-  final List<Dependent> _dependents = [];
-
-  @override
-  bool isPending = false;
-
-  @override
-  int get depth => _depth;
-
-  @override
-  Iterable<Dependent> get dependents => _dependents;
-
-  @override
-  void addDependent(Dependent node) => _dependents.add(node);
-
-  @override
-  void removeDependent(Dependent node) => _dependents.remove(node);
 
   T call() {
     _scope.graph.recordSource(this);
@@ -81,43 +49,6 @@ final class Derive<T> implements Source, Dependent {
         _isStable = true;
       }
     }
-  }
-
-  void _updateSources(List<Source> sources) {
-    final derives = sources.whereType<Dependent>();
-    final newSet = sources.toSet();
-    final oldSet = _sources.toSet();
-
-    for (final dep in newSet) {
-      if (!oldSet.contains(dep)) dep.addDependent(this);
-    }
-
-    for (final dep in oldSet) {
-      if (!newSet.contains(dep)) dep.removeDependent(this);
-    }
-
-    _sources = sources;
-    _updateDepth(derives);
-  }
-
-  bool _sourcesUnchanged(List<Source> sources) {
-    if (sources.length != _sources.length) return false;
-
-    for (var i = 0; i < sources.length; i++) {
-      if (!identical(sources[i], _sources[i])) return false;
-    }
-
-    return true;
-  }
-
-  void _updateDepth(Iterable<Dependent> dependencies) {
-    var maxDepth = 0;
-
-    for (final dep in dependencies) {
-      maxDepth = math.max(maxDepth, dep.depth);
-    }
-
-    _depth = maxDepth + 1;
   }
 
   @override
