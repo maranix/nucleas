@@ -32,8 +32,6 @@ final class Store<S> extends BaseSource<S> {
     for (var i = 0; i < _dependents.length; i++) {
       _scope.schedular.enqueue(_dependents[i]);
     }
-
-    if (!_scope.schedular.isBatching) _scope.schedular.flush();
   }
 
   void undo() {
@@ -42,6 +40,5 @@ final class Store<S> extends BaseSource<S> {
     for (var i = 0; i < _dependents.length; i++) {
       _scope.schedular.enqueue(_dependents[i]);
     }
-    if (!_scope.schedular.isBatching) _scope.schedular.flush();
   }
 }

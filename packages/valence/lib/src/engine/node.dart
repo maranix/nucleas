@@ -32,12 +32,6 @@ abstract interface class Dependent implements Node {
   /// that all sources are updated before their dependents.
   int get depth;
 
-  /// Whether this node is currently scheduled for or undergoing recomputation.
-  bool get isPending;
-
-  /// Sets whether this node is scheduled for recomputation.
-  set isPending(bool value);
-
   /// Recomputes the node's state based on the current values of its sources.
   ///
   /// This method is called by the reactive engine during the update phase.

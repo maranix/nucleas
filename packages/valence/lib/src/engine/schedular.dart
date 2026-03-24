@@ -1,68 +1,57 @@
+import 'package:collection/collection.dart';
 import 'package:valence/src/engine/node.dart';
+import 'package:valence/types.dart';
 
 abstract interface class Schedular {
   factory Schedular() = _SchedularImpl;
 
   bool get isBatching;
 
-  void beginBatch();
-  bool endBatch();
-
   void enqueue(Dependent node);
-  void flush();
+  void batch(VoidCallback batchFn);
 }
 
 final class _SchedularImpl implements Schedular {
   int _batchDepth = 0;
 
-  final List<Dependent> _pendingNodes = [];
+  // TODO(overhead): Think of a way to avoid using Set for de-duplication
+  final Set<Dependent> _pendingNodes = {};
 
   @override
   bool get isBatching => _batchDepth > 0;
 
   @override
-  void beginBatch() => _batchDepth++;
-
-  @override
-  bool endBatch() {
-    _batchDepth--;
-    return _batchDepth == 0;
-  }
-
-  @override
   void enqueue(Dependent node) {
-    if (node.isPending) return;
+    _pendingNodes.add(node);
 
-    node.isPending = true;
-
-    if (_pendingNodes.isEmpty) {
-      _pendingNodes.add(node);
-      return;
-    }
-
-    var i = _pendingNodes.length;
-    while (i >= 0 && _pendingNodes[i - 1].depth > node.depth) {
-      i--;
-    }
-
-    if (i == _pendingNodes.length) {
-      _pendingNodes.add(node);
-    } else {
-      _pendingNodes.insert(i, node);
-    }
+    // Auto-flush if we aren't inside a batch
+    if (!isBatching) _flush();
   }
 
   @override
-  void flush() {
-    var i = 0;
-    while (i < _pendingNodes.length) {
-      final node = _pendingNodes[i];
+  void batch(VoidCallback batchFn) {
+    _batchDepth++;
 
-      node.isPending = false;
-      node.recompute();
-      i++;
+    try {
+      batchFn();
+    } finally {
+      _batchDepth--;
+
+      if (_batchDepth == 0 && _pendingNodes.isNotEmpty) {
+        _flush();
+      }
     }
+  }
 
+  void _flush() {
+    if (_pendingNodes.isEmpty) return;
+
+    // TODO(overhead): Think of a way to avoid sorting and list conversion from set.
+    final batch = _pendingNodes.sorted((a, b) => a.depth.compareTo(b.depth));
     _pendingNodes.clear();
+
+    for (final node in batch) {
+      node.recompute();
+    }
   }
 }

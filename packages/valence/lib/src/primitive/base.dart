@@ -63,9 +63,6 @@ mixin DependentMixin implements Dependent {
   List<Source> _sources = [];
 
   @override
-  bool isPending = false;
-
-  @override
   int get depth => _depth;
 
   void _updateSources(List<Source> sources) {

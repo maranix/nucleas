@@ -1,15 +1,22 @@
 import 'package:valence/src/config.dart';
 import 'package:valence/src/engine/scope.dart';
 
-void batch(void Function() fn, {Scope? scope}) {
-  final s = scope ?? Valence.root;
-  s.schedular.beginBatch();
+Batch batch(
+  void Function() fn, {
+  bool lazy = false,
+  Scope? scope,
+}) => Batch(fn, scope: scope, lazy: lazy);
 
-  try {
-    fn();
-  } finally {
-    if (s.schedular.endBatch()) {
-      s.schedular.flush();
-    }
+final class Batch {
+  Batch(this.fn, {Scope? scope, bool lazy = false})
+    : _scope = scope ?? Valence.root {
+    if (!lazy) run();
+  }
+
+  final void Function() fn;
+  final Scope _scope;
+
+  void run() {
+    _scope.schedular.batch(fn);
   }
 }
