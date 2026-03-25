@@ -15,13 +15,15 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
 
   bool _isInitialized = false;
 
-  bool _isDirty = true;
-
   T call() {
     reportRead();
 
-    if (_isDirty) {
-      _forceRecompute();
+    // We only compute if someone actually asks for the value the very first time.
+    if (!_isInitialized) {
+      executeTracked(() {
+        _cachedValue = _compute();
+      });
+      _isInitialized = true;
     }
 
     return _cachedValue;
@@ -29,31 +31,25 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
 
   @override
   void recompute() {
-    if (_isDirty) return;
+    // If it was never read, it doesn't need to react to upstream changes yet.
+    if (!_isInitialized) return;
 
-    _isDirty = true;
-
-    _scope.schedular.batch(() {
-      for (var i = 0; i < _dependents.length; i++) {
-        _scope.schedular.enqueue(_dependents[i]);
-      }
-    });
-  }
-
-  void _forceRecompute() {
     late T nextValue;
 
     executeTracked(() {
       nextValue = _compute();
     });
 
-    _isDirty = false;
-
     // If the value didn't actually change, we just cache and exit cleanly
-    if (_isInitialized && _equals(_cachedValue, nextValue)) return;
+    if (_equals(_cachedValue, nextValue)) return;
 
     _cachedValue = nextValue;
-    _isInitialized = true;
+
+    _scope.schedular.batch(() {
+      for (var i = 0; i < _dependents.length; i++) {
+        _scope.schedular.enqueue(_dependents[i]);
+      }
+    });
   }
 
   @override

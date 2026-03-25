@@ -14,6 +14,9 @@ final class _SchedularImpl implements Schedular {
   int _batchDepth = 0;
   bool _isFlushing = false;
 
+  int _minDepth = -1;
+  int _maxDepth = -1;
+
   final List<Dependent> _queue = [];
 
   @override
@@ -25,6 +28,10 @@ final class _SchedularImpl implements Schedular {
 
     node.isScheduled = true;
     _queue.add(node);
+
+    final d = node.depth;
+    if (_minDepth == -1 || d < _minDepth) _minDepth = d;
+    if (d > _maxDepth) _maxDepth = d;
 
     if (_batchDepth == 0 && !_isFlushing) _flush();
   }
@@ -49,10 +56,15 @@ final class _SchedularImpl implements Schedular {
     _isFlushing = true;
     try {
       while (_queue.isNotEmpty) {
-        _queue.sort((a, b) => a.depth.compareTo(b.depth));
+        if (_minDepth != _maxDepth) {
+          _queue.sort((a, b) => a.depth.compareTo(b.depth));
+        }
 
         final batch = _queue.toList();
         _queue.clear();
+
+        _minDepth = -1;
+        _maxDepth = -1;
 
         for (var i = 0; i < batch.length; i++) {
           final node = batch[i];

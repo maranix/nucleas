@@ -62,10 +62,13 @@ void main() {
       final data = store(0);
       var computeCount = 0;
 
-      derive(() {
+      final d = derive(() {
         computeCount++;
         return flag() ? data() : -1;
       });
+
+      /// New architecture requires us to read the value to start tracking.
+      d();
 
       final before = computeCount;
       data.dispatch(const Increment()); // flag is false — should not recompute
