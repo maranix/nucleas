@@ -64,9 +64,7 @@ abstract base class BaseSource<S> implements Source {
 }
 
 abstract base class BaseDependent with DependentMixin {
-  BaseDependent({Scope? scope}) : _scope = scope ?? Valence.root {
-    _id = _scope.idPool.acquire();
-  }
+  BaseDependent({Scope? scope}) : _scope = scope ?? Valence.root;
 
   late final int _id;
 
@@ -79,9 +77,6 @@ abstract base class BaseDependent with DependentMixin {
   @override
   void dispose() {
     _unsubcribeFromSources();
-
-    _scope.schedular.cancel(id);
-    _scope.idPool.release(id);
   }
 }
 

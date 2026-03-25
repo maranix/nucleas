@@ -8,8 +8,6 @@ Derive<T> derive<T>(
 
 final class Derive<T> extends BaseSource<T> with DependentMixin {
   Derive(this._compute, {super.scope, super.equals}) {
-    _id = _scope.idPool.acquire();
-
     // Run once immediately to establish the initial dependency graph
     // and calculate the starting value.
     recompute();
@@ -54,9 +52,7 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
   @override
   void dispose() {
     super.dispose();
-    _unsubcribeFromSources();
 
-    _scope.schedular.cancel(id);
-    _scope.idPool.release(id);
+    _unsubcribeFromSources();
   }
 }

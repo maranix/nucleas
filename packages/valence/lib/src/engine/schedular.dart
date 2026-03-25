@@ -7,7 +7,6 @@ abstract interface class Schedular {
   bool get isBatching;
 
   void enqueue(Dependent node);
-  void cancel(int id);
   void batch(VoidCallback batchFn);
 }
 
@@ -48,13 +47,6 @@ final class _SchedularImpl implements Schedular {
     if (d > _maxDepth) _maxDepth = d;
 
     if (_batchDepth == 0 && !_isFlushing) _flush();
-  }
-
-  @override
-  void cancel(int id) {
-    if (id < _mask.length && _mask[id]) {
-      _mask[id] = false;
-    }
   }
 
   @override
