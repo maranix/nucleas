@@ -7,11 +7,7 @@ Derive<T> derive<T>(
 }) => Derive<T>(fn, scope: scope, equals: equals);
 
 final class Derive<T> extends BaseSource<T> with DependentMixin {
-  Derive(this._compute, {super.scope, super.equals}) {
-    // Run once immediately to establish the initial dependency graph
-    // and calculate the starting value.
-    recompute();
-  }
+  Derive(this._compute, {super.scope, super.equals});
 
   final ValueCallback<T> _compute;
 
@@ -19,29 +15,45 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
 
   bool _isInitialized = false;
 
+  bool _isDirty = true;
+
   T call() {
     reportRead();
+
+    if (_isDirty) {
+      _forceRecompute();
+    }
+
     return _cachedValue;
   }
 
   @override
   void recompute() {
-    late T nextValue;
+    if (_isDirty) return;
 
-    executeTracked(() {
-      nextValue = _compute();
-    });
-
-    if (_isInitialized && _equals(_cachedValue, nextValue)) return;
-
-    _cachedValue = nextValue;
-    _isInitialized = true;
+    _isDirty = true;
 
     _scope.schedular.batch(() {
       for (var i = 0; i < _dependents.length; i++) {
         _scope.schedular.enqueue(_dependents[i]);
       }
     });
+  }
+
+  void _forceRecompute() {
+    late T nextValue;
+
+    executeTracked(() {
+      nextValue = _compute();
+    });
+
+    _isDirty = false;
+
+    // If the value didn't actually change, we just cache and exit cleanly
+    if (_isInitialized && _equals(_cachedValue, nextValue)) return;
+
+    _cachedValue = nextValue;
+    _isInitialized = true;
   }
 
   @override
