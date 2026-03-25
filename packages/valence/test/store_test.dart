@@ -54,7 +54,7 @@ final class _NoOpListAction extends Action<List<int>> {
   List<int> reduce(List<int> s) => s;
 
   @override
-  void onDispatch() => _dispatchHook;
+  void onDispatch() => _dispatchHook();
 }
 
 void main() {
@@ -149,7 +149,11 @@ void main() {
       final before = listStore();
 
       // Action that returns the same instance
-      listStore.dispatch(_NoOpListAction(() => called = true));
+      listStore.dispatch(
+        _NoOpListAction(() {
+          called = true;
+        }),
+      );
       expect(called, true);
 
       final after = listStore();

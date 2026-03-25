@@ -8,8 +8,11 @@ Derive<T> derive<T>(
 
 final class Derive<T> extends BaseSource<T> with DependentMixin {
   Derive(this._compute, {super.scope, super.equals}) {
-    _cachedValue = _retrackAndCompute();
     _id = _scope.idPool.acquire();
+
+    // Run once immediately to establish the initial dependency graph
+    // and calculate the starting value.
+    recompute();
   }
 
   late final int _id;
@@ -19,50 +22,41 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
 
   final ValueCallback<T> _compute;
 
-  T? _cachedValue;
+  late T _cachedValue;
+
+  bool _isInitialized = false;
 
   T call() {
-    _scope.graph.recordSource(this);
-    return _cachedValue as T;
+    reportRead();
+    return _cachedValue;
   }
 
   @override
   void recompute() {
-    final next = switch (_isStable) {
-      true => _compute(),
-      false => _retrackAndCompute(),
-    };
+    late T nextValue;
 
-    if (_equals(_cachedValue as T, next)) return;
-    _cachedValue = next;
+    executeTracked(() {
+      nextValue = _compute();
+    });
 
-    for (var i = 0; i < _dependents.length; i++) {
-      _scope.schedular.enqueue(_dependents[i]);
-    }
-  }
+    if (_isInitialized && _equals(_cachedValue, nextValue)) return;
 
-  T _retrackAndCompute() {
-    _scope.graph.beginTracking();
+    _cachedValue = nextValue;
+    _isInitialized = true;
 
-    try {
-      return _compute();
-    } finally {
-      final newDependencies = _scope.graph.endTracking();
-      if (!_sourcesUnchanged(newDependencies)) {
-        _updateSources(newDependencies);
-        _isStable = false;
-      } else {
-        _isStable = true;
+    _scope.schedular.batch(() {
+      for (var i = 0; i < _dependents.length; i++) {
+        _scope.schedular.enqueue(_dependents[i]);
       }
-    }
+    });
   }
 
   @override
   void dispose() {
+    super.dispose();
     _unsubcribeFromSources();
 
     _scope.schedular.cancel(id);
     _scope.idPool.release(id);
-    super.dispose();
   }
 }

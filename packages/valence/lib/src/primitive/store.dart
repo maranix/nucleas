@@ -13,7 +13,7 @@ final class Store<S, A extends Action<S>> extends BaseSource<S> {
   final List<S> _history = [];
 
   S call() {
-    _scope.graph.recordSource(this);
+    reportRead();
     return _value;
   }
 
@@ -31,21 +31,13 @@ final class Store<S, A extends Action<S>> extends BaseSource<S> {
     _history.add(_value);
     _value = next;
 
-    _scope.schedular.batch(() {
-      for (var i = 0; i < _dependents.length; i++) {
-        _scope.schedular.enqueue(_dependents[i]);
-      }
-    });
+    notifyDependents();
   }
 
   void undo() {
     if (_history.isEmpty) return;
     _value = _history.removeLast();
 
-    _scope.schedular.batch(() {
-      for (var i = 0; i < _dependents.length; i++) {
-        _scope.schedular.enqueue(_dependents[i]);
-      }
-    });
+    notifyDependents();
   }
 }

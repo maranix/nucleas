@@ -1,71 +1,58 @@
 import 'package:valence/src/engine/node.dart';
+import 'package:valence/types.dart';
+
+final class GraphFrame {
+  final int epoch;
+
+  final List<Source> sources = [];
+
+  GraphFrame(this.epoch);
+}
 
 abstract interface class Graph {
   factory Graph() = _GraphImpl;
 
+  /// Whether a computation is currently being tracked.
   bool get isTracking;
 
-  void beginTracking();
-  List<Source> endTracking();
+  /// Executes a computation and returns the unique sources read.
+  List<Source> track(VoidCallback computation);
 
-  void beginProbe(List<Source> sources);
-  bool endProbe(int count);
-
-  void recordSource(Source source);
+  /// Records a source as a dependency in the current tracking context.
+  void record(Source source);
 }
 
 final class _GraphImpl implements Graph {
-  List<Source>? _probed;
-  int _cursor = 0;
-  bool _consistent = true;
+  final List<GraphFrame> _stack = [];
 
-  final List<List<Source>> _trackingStack = [];
+  int _currentEpoch = 0;
 
   @override
-  bool get isTracking => _trackingStack.isNotEmpty;
+  bool get isTracking => _stack.isNotEmpty;
 
   @override
-  void beginTracking() => _trackingStack.add([]);
+  List<Source> track(VoidCallback computation) {
+    _currentEpoch++;
 
-  @override
-  List<Source> endTracking() => _trackingStack.removeLast();
+    final frame = GraphFrame(_currentEpoch);
+    _stack.add(frame);
 
-  @override
-  void beginProbe(List<Source> sources) {
-    _probed = sources;
-    _cursor = 0;
-    _consistent = true;
+    try {
+      computation();
+      return frame.sources;
+    } finally {
+      _stack.removeLast();
+    }
   }
 
   @override
-  bool endProbe(int count) {
-    _probed = null;
-    return _consistent && _cursor == count;
-  }
+  void record(Source source) {
+    if (_stack.isEmpty) return;
 
-  @override
-  void recordSource(Source source) {
-    if (_trackingStack.isEmpty) {
-      _validateProbedSouce(source);
-      return;
-    }
+    final currFrame = _stack.last;
+    if (source.lastAccessedEpoch == currFrame.epoch) return;
 
-    final list = _trackingStack.last;
-    for (final node in list) {
-      if (identical(node, source)) return;
-    }
-
-    list.add(source);
-  }
-
-  void _validateProbedSouce(Source source) {
-    if (_probed == null || !_consistent) return;
-
-    if (_cursor >= _probed!.length || !identical(_probed![_cursor], source)) {
-      _consistent = false;
-      return;
-    }
-
-    _cursor++;
+    source.lastAccessedEpoch = currFrame.epoch;
+    currFrame.sources.add(source);
   }
 }

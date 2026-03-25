@@ -22,6 +22,19 @@ abstract base class BaseSource<S> implements Source {
   final EqualityCallback<S> _equals;
   final List<Dependent> _dependents = [];
 
+  int _lastAccessedEpoch = -1;
+
+  @override
+  int get lastAccessedEpoch => _lastAccessedEpoch;
+
+  @override
+  set lastAccessedEpoch(int epoch) => _lastAccessedEpoch = epoch;
+
+  @override
+  void reportRead() {
+    _scope.graph.record(this);
+  }
+
   @override
   Iterable<Dependent> get dependents => _dependents;
 
@@ -35,6 +48,15 @@ abstract base class BaseSource<S> implements Source {
 
     _dependents[i] = _dependents.last;
     _dependents.removeLast();
+  }
+
+  @override
+  void notifyDependents() {
+    _scope.schedular.batch(() {
+      for (var i = 0; i < _dependents.length; i++) {
+        _scope.schedular.enqueue(_dependents[i]);
+      }
+    });
   }
 
   @override
@@ -68,13 +90,6 @@ mixin DependentMixin implements Dependent {
 
   int _depth = 0;
 
-  /// Whether this node's source set is stable from the last run.
-  ///
-  /// When true, [recompute] will first probe the existing sources
-  /// before committing to a full re-run. Set to false whenever
-  /// the source set changes.
-  bool _isStable = false;
-
   List<Source> _sources = [];
 
   @override
@@ -88,19 +103,19 @@ mixin DependentMixin implements Dependent {
       return;
     }
 
-    final newSet = sources.toSet();
-    final oldSet = _sources.toSet();
-
-    for (final dep in newSet) {
-      if (!oldSet.contains(dep)) dep.addDependent(this);
+    for (final old in _sources) {
+      if (!sources.contains(old)) {
+        old.removeDependent(this);
+      }
     }
 
-    for (final dep in oldSet) {
-      if (!newSet.contains(dep)) dep.removeDependent(this);
+    for (final newSrc in sources) {
+      if (!_sources.contains(newSrc)) {
+        newSrc.addDependent(this);
+      }
     }
 
     _sources = sources;
-
     _updateDepth(derives);
   }
 
@@ -133,5 +148,11 @@ mixin DependentMixin implements Dependent {
       source.removeDependent(this);
     }
     _sources.clear();
+  }
+
+  @override
+  void executeTracked(VoidCallback computation) {
+    final sources = _scope.graph.track(computation);
+    _updateSources(sources);
   }
 }

@@ -76,18 +76,18 @@ final class _SchedularImpl implements Schedular {
   void _flush() {
     _isFlushing = true;
     try {
-      while (_minDepth != -1) {
-        // Start from the shallowest depth
-        int d = _minDepth;
-        _minDepth = -1; // Reset to find next min during this pass
+      int d = _minDepth;
 
-        // Process all nodes at this depth level
-        final currentBucket = _buckets[d];
-        if (currentBucket.isEmpty) continue;
+      while (d != -1 && d <= _maxDepth) {
+        _minDepth = -1; // Reset to catch any newly enqueued minimums
 
-        // Copy bucket to allow re-entrancy/cascades
-        final nodes = List<Dependent>.from(currentBucket);
-        currentBucket.clear();
+        if (d >= _buckets.length || _buckets[d].isEmpty) {
+          d++;
+          continue;
+        }
+
+        final nodes = List<Dependent>.from(_buckets[d]);
+        _buckets[d].clear();
 
         for (var i = 0; i < nodes.length; i++) {
           final node = nodes[i];
@@ -98,12 +98,17 @@ final class _SchedularImpl implements Schedular {
           node.recompute();
         }
 
-        // After recomputing, check if we need to continue the while loop
-        // (Cascades might have filled _minDepth again)
+        // Did a recompute enqueue a dependency at a shallower depth?
+        if (_minDepth != -1 && _minDepth <= d) {
+          d = _minDepth; // Jump back to maintain topological order
+        } else {
+          d++; // Move to the next depth bucket
+        }
       }
-      _maxDepth = -1;
     } finally {
       _isFlushing = false;
+      _minDepth = -1;
+      _maxDepth = -1;
     }
   }
 }
