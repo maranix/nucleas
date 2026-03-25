@@ -23,8 +23,10 @@ void main() {
 
       scope.dispose();
 
-      c.dispatch(const Increment());
-      expect(runs, 1); // reactor was disposed, did not re-run
+      expect(
+        () => c.dispatch(const Increment()),
+        throwsA(isA<AssertionError>()),
+      );
     });
 
     test('disposing a scope does not affect root scope nodes', () {

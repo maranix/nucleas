@@ -2,6 +2,8 @@ import 'package:valence/types.dart';
 
 /// Represents a node in the dependency graph.
 abstract interface class Node {
+  bool get isDisposed;
+
   /// Disposes the node and cleans up any resources it holds.
   void dispose();
 }
@@ -37,7 +39,8 @@ abstract interface class Source implements Node {
 /// A [Dependent] listens to sources and other dependents and reacts to their
 /// changes, typically by scheduling a recomputation of its own state.
 abstract interface class Dependent implements Node {
-  int get id;
+  bool get isScheduled;
+  set isScheduled(bool value);
 
   /// The depth of this node in the dependency graph.
   ///

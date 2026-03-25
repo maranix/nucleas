@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:meta/meta.dart';
 import 'package:valence/src/config.dart';
 import 'package:valence/src/engine/node.dart';
 import 'package:valence/src/engine/scope.dart';
@@ -23,6 +24,11 @@ abstract base class BaseSource<S> implements Source {
   final List<Dependent> _dependents = [];
 
   int _lastAccessedEpoch = -1;
+
+  bool _isDisposed = false;
+
+  @override
+  bool get isDisposed => _isDisposed;
 
   @override
   int get lastAccessedEpoch => _lastAccessedEpoch;
@@ -60,22 +66,27 @@ abstract base class BaseSource<S> implements Source {
   }
 
   @override
-  void dispose() => _dependents.clear();
+  @mustCallSuper
+  void dispose() {
+    if (_isDisposed) return;
+
+    _isDisposed = true;
+    _dependents.clear();
+  }
 }
 
 abstract base class BaseDependent with DependentMixin {
   BaseDependent({Scope? scope}) : _scope = scope ?? Valence.root;
 
-  late final int _id;
-
-  @override
-  int get id => _id;
-
   @override
   final Scope _scope;
 
   @override
+  @mustCallSuper
   void dispose() {
+    if (_isDisposed) return;
+
+    _isDisposed = true;
     _unsubcribeFromSources();
   }
 }
@@ -85,7 +96,20 @@ mixin DependentMixin implements Dependent {
 
   int _depth = 0;
 
+  bool _isScheduled = false;
+
+  bool _isDisposed = false;
+
   List<Source> _sources = [];
+
+  @override
+  bool get isScheduled => _isScheduled;
+
+  @override
+  bool get isDisposed => _isDisposed;
+
+  @override
+  set isScheduled(bool value) => _isScheduled = value;
 
   @override
   int get depth => _depth;

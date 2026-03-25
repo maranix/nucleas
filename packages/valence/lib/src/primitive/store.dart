@@ -18,6 +18,7 @@ final class Store<S, A extends Action<S>> extends BaseSource<S> {
   }
 
   void dispatch(A action) {
+    assert(!isDisposed, 'Cannot dispatch an action to a disposed Store.');
     assert(
       !_scope.graph.isTracking,
       'dispatch() called inside a reactive computation.',

@@ -13,11 +13,6 @@ final class Derive<T> extends BaseSource<T> with DependentMixin {
     recompute();
   }
 
-  late final int _id;
-
-  @override
-  int get id => _id;
-
   final ValueCallback<T> _compute;
 
   late T _cachedValue;
