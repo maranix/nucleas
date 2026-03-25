@@ -1,8 +1,9 @@
 import 'package:test/test.dart';
 import 'package:valence/valence.dart';
 
-final class Increment implements Reducer<int> {
+final class Increment extends Action<int> {
   const Increment();
+
   @override
   int reduce(int s) => s + 1;
 }
@@ -10,8 +11,8 @@ final class Increment implements Reducer<int> {
 void main() {
   group('batch', () {
     test('reactor runs once for multiple dispatches', () {
-      final a = store<int>(0);
-      final b = store<int>(0);
+      final a = store(0);
+      final b = store(0);
       var runs = 0;
 
       reactor(() {
@@ -32,7 +33,7 @@ void main() {
     });
 
     test('nested batch collapses into outermost', () {
-      final c = store<int>(0);
+      final c = store(0);
       var runs = 0;
       reactor(() {
         c();
@@ -52,8 +53,8 @@ void main() {
     });
 
     test('reactor sees final state of all stores', () {
-      final a = store<int>(0);
-      final b = store<int>(0);
+      final a = store(0);
+      final b = store(0);
       int? seenA, seenB;
 
       reactor(() {
@@ -72,8 +73,8 @@ void main() {
   });
 
   test('lazy batch runs only when accessed', () {
-    final a = store<int>(0);
-    final b = store<int>(0);
+    final a = store(0);
+    final b = store(0);
     var runs = 0;
 
     reactor(() {

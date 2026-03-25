@@ -1,12 +1,12 @@
 part of 'base.dart';
 
-Store<S> store<S>(
+Store<S, A> store<S, A extends Action<S>>(
   S initial, {
   Scope? scope,
   EqualityCallback<S>? equals,
-}) => Store<S>(initial, scope: scope, equals: equals);
+}) => Store<S, A>(initial, scope: scope, equals: equals);
 
-final class Store<S> extends BaseSource<S> {
+final class Store<S, A extends Action<S>> extends BaseSource<S> {
   Store(this._value, {super.scope, super.equals});
 
   S _value;
@@ -17,13 +17,15 @@ final class Store<S> extends BaseSource<S> {
     return _value;
   }
 
-  void dispatch(Reducer<S> reducer) {
+  void dispatch(A action) {
     assert(
       !_scope.graph.isTracking,
       'dispatch() called inside a reactive computation.',
     );
 
-    final next = reducer.reduce(_value);
+    action.onDispatch();
+
+    final next = action.reduce(_value);
     if (_equals(_value, next)) return;
 
     _history.add(_value);

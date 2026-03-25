@@ -1,13 +1,13 @@
 import 'package:valence/valence.dart';
 
-final class Increment implements Reducer<int> {
+final class Increment extends Action<int> {
   const Increment();
 
   @override
   int reduce(int state) => state + 1;
 }
 
-final class Decrement implements Reducer<int> {
+final class Decrement extends Action<int> {
   const Decrement();
 
   @override

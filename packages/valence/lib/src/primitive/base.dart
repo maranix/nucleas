@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:valence/src/config.dart';
 import 'package:valence/src/engine/node.dart';
 import 'package:valence/src/engine/scope.dart';
-import 'package:valence/src/primitive/reducer.dart';
+import 'package:valence/src/primitive/action.dart';
 import 'package:valence/types.dart';
 import 'package:valence/utils/equality.dart';
 

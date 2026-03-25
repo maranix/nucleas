@@ -1,8 +1,9 @@
 import 'package:test/test.dart';
 import 'package:valence/valence.dart';
 
-final class Increment implements Reducer<int> {
+final class Increment extends Action<int> {
   const Increment();
+
   @override
   int reduce(int s) => s + 1;
 }
@@ -11,7 +12,7 @@ void main() {
   group('scope', () {
     test('reactor in disposed scope no longer runs', () {
       final scope = Scope();
-      final c = store<int>(0, scope: scope);
+      final c = store(0, scope: scope);
       var runs = 0;
 
       reactor(() {
@@ -27,7 +28,7 @@ void main() {
     });
 
     test('disposing a scope does not affect root scope nodes', () {
-      final rootStore = store<int>(0);
+      final rootStore = store(0);
       var rootRuns = 0;
       reactor(() {
         rootStore();
@@ -35,7 +36,7 @@ void main() {
       });
 
       final scope = Scope();
-      store<int>(0, scope: scope); // owned by child scope
+      store(0, scope: scope); // owned by child scope
       scope.dispose();
 
       rootStore.dispatch(const Increment());

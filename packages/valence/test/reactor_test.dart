@@ -1,15 +1,21 @@
 import 'package:test/test.dart';
 import 'package:valence/valence.dart';
 
-final class Increment implements Reducer<int> {
+final class Increment extends Action<int> {
   const Increment();
+
+  @override
+  String get debugLabel => 'Increment';
+
   @override
   int reduce(int s) => s + 1;
 }
 
-final class SetBool implements Reducer<bool> {
+final class SetBool extends Action<bool> {
   const SetBool(this.value);
+
   final bool value;
+
   @override
   bool reduce(bool _) => value;
 }
@@ -17,7 +23,7 @@ final class SetBool implements Reducer<bool> {
 void main() {
   group('reactor', () {
     test('runs immediately on creation', () {
-      final c = store<int>(0);
+      final c = store(0);
       var runs = 0;
       reactor(() {
         c();
@@ -27,7 +33,7 @@ void main() {
     });
 
     test('re-runs when dependency changes', () {
-      final c = store<int>(0);
+      final c = store(0);
       var runs = 0;
       reactor(() {
         c();
@@ -38,7 +44,7 @@ void main() {
     });
 
     test('captures latest value', () {
-      final c = store<int>(0);
+      final c = store(0);
       final seen = <int>[];
       reactor(() => seen.add(c()));
       c.dispatch(const Increment());
@@ -47,7 +53,7 @@ void main() {
     });
 
     test('dispose stops re-runs', () {
-      final c = store<int>(0);
+      final c = store(0);
       var runs = 0;
       final r = reactor(() {
         c();
@@ -59,9 +65,9 @@ void main() {
     });
 
     test('conditional tracking — unsubscribes from old branch', () {
-      final flag = store<bool>(true);
-      final a = store<int>(0);
-      final b = store<int>(0);
+      final flag = store(true);
+      final a = store(0);
+      final b = store(0);
       final seen = <String>[];
 
       reactor(() {

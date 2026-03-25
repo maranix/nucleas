@@ -1,15 +1,18 @@
 import 'package:test/test.dart';
 import 'package:valence/valence.dart';
 
-final class Increment implements Reducer<int> {
+final class Increment extends Action<int> {
   const Increment();
+
   @override
   int reduce(int s) => s + 1;
 }
 
-final class SetBool implements Reducer<bool> {
+final class SetBool extends Action<bool> {
   const SetBool(this.value);
+
   final bool value;
+
   @override
   bool reduce(bool _) => value;
 }
@@ -17,20 +20,20 @@ final class SetBool implements Reducer<bool> {
 void main() {
   group('derive', () {
     test('computes initial value', () {
-      final c = store<int>(2);
+      final c = store(2);
       final d = derive(() => c() * 2);
       expect(d(), 4);
     });
 
     test('updates when dependency changes', () {
-      final c = store<int>(0);
+      final c = store(0);
       final d = derive(() => c() * 2);
       c.dispatch(const Increment());
       expect(d(), 2);
     });
 
     test('chains — derive of derive', () {
-      final c = store<int>(1);
+      final c = store(1);
       final d1 = derive(() => c() + 1);
       final d2 = derive(() => d1() * 2);
       expect(d2(), 4);
@@ -40,7 +43,7 @@ void main() {
     });
 
     test('glitch free — diamond dependency never sees stale state', () {
-      final s = store<int>(0);
+      final s = store(0);
       final d1 = derive(() => s() + 1);
       final d2 = derive(() => s() + d1());
 
@@ -55,8 +58,8 @@ void main() {
     });
 
     test('conditional tracking — unsubscribes from unused branch', () {
-      final flag = store<bool>(false);
-      final data = store<int>(0);
+      final flag = store(false);
+      final data = store(0);
       var computeCount = 0;
 
       derive(() {
@@ -74,7 +77,7 @@ void main() {
     });
 
     test('propagation cut — no downstream update when value unchanged', () {
-      final s = store<int>(0);
+      final s = store(0);
       final constant = derive(() {
         s();
         return 42;
