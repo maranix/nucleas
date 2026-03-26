@@ -40,6 +40,9 @@ final class _StoreImpl<S, A extends Action<S>>
   final List<S> _history = [];
 
   @override
+  int get depth => 0;
+
+  @override
   Scope get scope => _scope;
 
   @override

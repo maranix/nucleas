@@ -47,6 +47,7 @@ final class _SchedularImpl implements Schedular {
     _flushIfReady();
   }
 
+  @pragma('vm:prefer-inline')
   @override
   void batch(VoidCallback batchFn) {
     _batchDepth++;
@@ -109,7 +110,7 @@ final class _SchedularImpl implements Schedular {
         node.recompute();
       }
 
-      _processingQueue.clear();
+      _processingQueue = [];
     }
 
     _isFlushing = false;

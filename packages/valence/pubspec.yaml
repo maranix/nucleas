@@ -8,7 +8,6 @@ environment:
 resolution: workspace
 
 dependencies:
-  collection: ^1.19.1
   graphs: ^2.3.2
   meta: ^1.18.1
   # path: ^1.9.0

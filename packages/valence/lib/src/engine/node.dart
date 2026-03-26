@@ -4,6 +4,12 @@ import 'package:valence/types.dart';
 
 /// Represents a node in the dependency graph.
 abstract interface class Node {
+  /// The depth of this node in the dependency graph.
+  ///
+  /// This is used for topological sorting during the update phase to ensure
+  /// that all sources are updated before their dependents.
+  int get depth;
+
   bool get disposed;
 
   /// Disposes the node and cleans up any resources it holds.
@@ -49,12 +55,6 @@ abstract interface class Dependent implements Node {
   set isScheduled(bool value);
 
   bool get isLeaf;
-
-  /// The depth of this node in the dependency graph.
-  ///
-  /// This is used for topological sorting during the update phase to ensure
-  /// that all sources are updated before their dependents.
-  int get depth;
 
   /// Recomputes the node's state based on the current values of its sources.
   ///
@@ -245,10 +245,7 @@ mixin DependencyTrackingMixin implements Dependent {
 
     for (var i = 0; i < sources.length; i++) {
       final src = sources[i];
-      if (src is Dependent) {
-        final d = (src as Dependent).depth;
-        if (d > maxDepth) maxDepth = d;
-      }
+      if (src.depth > maxDepth) maxDepth = src.depth;
     }
 
     _depth = maxDepth + 1;
