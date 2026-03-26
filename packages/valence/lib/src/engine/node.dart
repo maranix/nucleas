@@ -46,6 +46,8 @@ abstract interface class Dependent implements Node {
   bool get isScheduled;
   set isScheduled(bool value);
 
+  bool get isLeaf;
+
   /// The depth of this node in the dependency graph.
   ///
   /// This is used for topological sorting during the update phase to ensure
@@ -89,8 +91,11 @@ mixin SourceMixin implements Source {
   /// The [Scope] this source belongs to.
   Scope get scope;
 
-  final List<Dependent> _dependents = [];
   int _lastAccessedEpoch = -1;
+
+  final List<Dependent> _dependents = [];
+
+  final List<VoidCallback> _leafListeners = [];
 
   @override
   Iterable<Dependent> get dependents => _dependents;
@@ -102,15 +107,29 @@ mixin SourceMixin implements Source {
   set lastAccessedEpoch(int epoch) => _lastAccessedEpoch = epoch;
 
   @override
-  void addDependent(Dependent node) => _dependents.add(node);
+  void addDependent(Dependent node) {
+    if (node.isLeaf) {
+      _leafListeners.add(node.recompute);
+    } else {
+      _dependents.add(node);
+    }
+  }
 
   @override
   void removeDependent(Dependent node) {
-    final i = _dependents.indexOf(node);
-    if (i < 0) return;
+    if (node.isLeaf) {
+      final i = _leafListeners.indexOf(node.recompute);
+      if (i < 0) return;
 
-    _dependents[i] = _dependents.last;
-    _dependents.removeLast();
+      _leafListeners[i] = _leafListeners.last;
+      _leafListeners.removeLast();
+    } else {
+      final i = _dependents.indexOf(node);
+      if (i < 0) return;
+
+      _dependents[i] = _dependents.last;
+      _dependents.removeLast();
+    }
   }
 
   @override
@@ -120,11 +139,15 @@ mixin SourceMixin implements Source {
 
   @override
   void notifyDependents() {
-    scope.schedular.batch(() {
-      for (var i = 0; i < _dependents.length; i++) {
-        scope.schedular.enqueue(_dependents[i]);
+    if (_dependents.isNotEmpty) {
+      for (final dependent in _dependents) {
+        scope.schedular.enqueue(dependent);
       }
-    });
+    }
+
+    for (var i = 0; i < _leafListeners.length; i++) {
+      _leafListeners[i]();
+    }
   }
 
   /// Clears the dependents list. Call during disposal.

@@ -38,6 +38,9 @@ final class _DeriveImpl<T>
   bool _isInitialized = false;
 
   @override
+  bool get isLeaf => false;
+
+  @override
   Scope get scope => _scope;
 
   @override

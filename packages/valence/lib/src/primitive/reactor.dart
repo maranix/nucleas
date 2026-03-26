@@ -42,6 +42,9 @@ final class _ReactorImpl
   final Scope _scope;
 
   @override
+  bool get isLeaf => true;
+
+  @override
   Scope get scope => _scope;
 
   @override
