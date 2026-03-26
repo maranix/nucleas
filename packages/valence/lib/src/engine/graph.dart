@@ -1,12 +1,14 @@
 import 'package:valence/src/engine/node.dart';
 import 'package:valence/types.dart';
 
-final class GraphFrame {
+final class _GraphFrame {
   final int epoch;
 
   final List<Source> sources = [];
 
-  GraphFrame(this.epoch);
+  final _GraphFrame? _parent;
+
+  _GraphFrame(this.epoch, this._parent);
 }
 
 abstract interface class Graph {
@@ -23,36 +25,37 @@ abstract interface class Graph {
 }
 
 final class _GraphImpl implements Graph {
-  final List<GraphFrame> _stack = [];
+  _GraphFrame? _currentFrame;
 
   int _currentEpoch = 0;
 
   @override
-  bool get isTracking => _stack.isNotEmpty;
+  bool get isTracking => _currentFrame != null;
 
   @override
   List<Source> track(VoidCallback computation) {
     _currentEpoch++;
 
-    final frame = GraphFrame(_currentEpoch);
-    _stack.add(frame);
+    final frame = _GraphFrame(_currentEpoch, _currentFrame);
+    _currentFrame = frame;
 
     try {
       computation();
       return frame.sources;
     } finally {
-      _stack.removeLast();
+      _currentFrame = frame._parent;
     }
   }
 
+  @pragma("vm:prefer-inline")
   @override
   void record(Source source) {
-    if (_stack.isEmpty) return;
+    final frame = _currentFrame;
+    if (frame == null) return;
 
-    final currFrame = _stack.last;
-    if (source.lastAccessedEpoch == currFrame.epoch) return;
+    if (source.lastAccessedEpoch == frame.epoch) return;
 
-    source.lastAccessedEpoch = currFrame.epoch;
-    currFrame.sources.add(source);
+    source.lastAccessedEpoch = frame.epoch;
+    frame.sources.add(source);
   }
 }
