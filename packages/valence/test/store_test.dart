@@ -1,5 +1,4 @@
 import 'package:test/test.dart';
-import 'package:valence/types.dart';
 import 'package:valence/valence.dart';
 
 sealed class CounterAction extends Action<int> {
@@ -43,18 +42,6 @@ final class SetValue extends Action<int> {
   final int val;
   @override
   int reduce(int _) => val;
-}
-
-final class _NoOpListAction extends Action<List<int>> {
-  const _NoOpListAction(this._dispatchHook);
-
-  final VoidCallback _dispatchHook;
-
-  @override
-  List<int> reduce(List<int> s) => s;
-
-  @override
-  void onDispatch() => _dispatchHook();
 }
 
 void main() {
@@ -139,26 +126,6 @@ void main() {
         11,
         reason: 'Store B history should be untouched by Store A undo',
       );
-    });
-
-    test('Store handles complex state objects', () {
-      // Testing with a List or Map to ensure identity checks work
-      final listStore = store<List<int>, Action<List<int>>>([1, 2]);
-      var called = false;
-
-      final before = listStore();
-
-      // Action that returns the same instance
-      listStore.dispatch(
-        _NoOpListAction(() {
-          called = true;
-        }),
-      );
-      expect(called, true);
-
-      final after = listStore();
-
-      expect(identical(before, after), true);
     });
   });
 }

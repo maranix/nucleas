@@ -62,8 +62,6 @@ final class _StoreImpl<S, A extends Action<S>>
       'dispatch() called inside a reactive computation.',
     );
 
-    action.onDispatch();
-
     final next = action.reduce(_value);
     if (equals(_value, next)) return;
 
