@@ -20,9 +20,6 @@ abstract base class OriginNode<T> extends BaseNode
 abstract base class RelayNode<T> extends BaseNode
     with SourceMixin, SubscriberMixin, DisposeMixin, EqualityMixin<T> {
   @override
-  bool get isLeaf => false;
-
-  @override
   void dispose() {
     if (disposed) return;
     markDisposed();
@@ -33,9 +30,6 @@ abstract base class RelayNode<T> extends BaseNode
 
 abstract base class ObserverNode extends BaseNode
     with SubscriberMixin, DisposeMixin {
-  @override
-  bool get isLeaf => true;
-
   @override
   void dispose() {
     if (disposed) return;
@@ -97,8 +91,6 @@ abstract interface class Source implements Node {
 abstract interface class Dependent implements Node {
   bool get isScheduled;
   set isScheduled(bool value);
-
-  bool get isLeaf;
 
   /// Recomputes the node's state based on the current values of its sources.
   ///

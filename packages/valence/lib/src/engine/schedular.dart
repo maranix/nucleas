@@ -63,11 +63,6 @@ final class _SchedularImpl implements Schedular {
 
   @pragma('vm:prefer-inline')
   void _enqueueDependent(Dependent node) {
-    if (node.isLeaf && !isBatching) {
-      node.recompute();
-      return;
-    }
-
     if (node.isScheduled || node.disposed) return;
 
     node.isScheduled = true;
@@ -110,7 +105,7 @@ final class _SchedularImpl implements Schedular {
         node.recompute();
       }
 
-      _processingQueue = [];
+      _processingQueue.clear();
     }
 
     _isFlushing = false;
