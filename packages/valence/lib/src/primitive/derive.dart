@@ -10,8 +10,6 @@ import 'package:valence/utils/equality.dart';
 /// and lifecycle management.
 abstract interface class Derive<T> {
   T call();
-  bool get disposed;
-  void dispose();
 }
 
 /// Creates a new [Derive].
@@ -23,7 +21,7 @@ Derive<T> derive<T>(
 
 final class _DeriveImpl<T>
     with DisposeMixin, SourceMixin, EqualityMixin<T>, SubscriberMixin
-    implements Source, Dependent, Derive<T> {
+    implements Derive<T> {
   _DeriveImpl(this._compute, {Scope? scope, EqualityCallback<T>? eq})
     : _scope = scope ?? Valence.root,
       _equals = eq ?? defaultEquals {

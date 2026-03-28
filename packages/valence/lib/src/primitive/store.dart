@@ -26,7 +26,7 @@ Store<S, A> store<S, A extends Action<S>>(
 
 final class _StoreImpl<S, A extends Action<S>>
     with DisposeMixin, SourceMixin, EqualityMixin<S>
-    implements Source, Store<S, A> {
+    implements Store<S, A> {
   _StoreImpl(this._value, {Scope? scope, EqualityCallback<S>? eq})
     : _scope = scope ?? Valence.root,
       _equals = eq ?? defaultEquals {
