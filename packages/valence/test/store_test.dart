@@ -91,41 +91,4 @@ void main() {
       expect(lastSeen, 1);
     });
   });
-
-  group('Store: History (Undo)', () {
-    test('undo', () {
-      final c = store(0);
-
-      c.dispatch(const Increment()); // 1
-      c.dispatch(const Increment()); // 2
-      expect(c(), 2);
-
-      c.undo();
-      expect(c(), 1);
-    });
-
-    test('undo on empty history is a no-op', () {
-      final c = store(0);
-      expect(() => c.undo(), returnsNormally);
-      expect(c(), 0);
-    });
-  });
-
-  group('Edge Cases', () {
-    test('Multiple stores do not share history nodes', () {
-      final a = store(0);
-      final b = store(10);
-
-      a.dispatch(const Increment());
-      b.dispatch(const Increment());
-
-      a.undo();
-      expect(a(), 0);
-      expect(
-        b(),
-        11,
-        reason: 'Store B history should be untouched by Store A undo',
-      );
-    });
-  });
 }

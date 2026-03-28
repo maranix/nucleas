@@ -12,7 +12,7 @@ import 'package:valence/utils/equality.dart';
 abstract interface class Store<S, A extends Action<S>> {
   S call();
   void dispatch(A action);
-  void undo();
+
   bool get disposed;
   void dispose();
 }
@@ -43,7 +43,6 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
   final EqualityCallback<S> _equals;
 
   S _value;
-  final List<S> _history = [];
 
   @override
   Scope get scope => _scope;
@@ -69,18 +68,14 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
     );
 
     final next = action.reduce(_value);
+    assert(
+      next is! Node,
+      'Type Error: Illegal attempt to store a reactive Node as state.',
+    );
+
     if (equals(_value, next)) return;
 
-    _history.add(_value);
     _value = next;
-
-    notifyDependents();
-  }
-
-  @override
-  void undo() {
-    if (_history.isEmpty) return;
-    _value = _history.removeLast();
 
     notifyDependents();
   }
