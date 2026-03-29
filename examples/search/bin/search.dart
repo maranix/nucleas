@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,15 +7,7 @@ import 'package:valence/valence.dart';
 
 const baseURL = "dummyjson.com";
 
-final queries = <String>[
-  "phone",
-  "mobile",
-  "watch",
-  "car",
-  "table",
-  "",
-  "bottle",
-];
+final queries = <String>["phone", "mobile", "watch", "car", "table", "bottle"];
 
 final client = http.Client();
 
@@ -32,39 +25,67 @@ Future<int> _searchProducts(String query) async {
 
 void main() async {
   final searchQuery = store("", filter: (q) => q.isNotEmpty);
+  final searchResult = store(0);
 
   final searchResource = resource(() {
     final q = searchQuery();
+    if (q.isEmpty) return Future.value(0);
+
     return _searchProducts(q);
+  }, filter: (c) => c > 0);
+
+  searchResource.trigger(
+    store: searchResult,
+    then: (count) => Action<int>.run(handler: (_) => count),
+  );
+
+  reactor(() {
+    final query = searchQuery();
+    final loading = searchResource().isLoading;
+
+    if (!loading || query.isEmpty) return;
+
+    print("⏳ Waiting for results for $query...");
   });
 
   reactor(() {
-    // Reading both the Resource and the Store in the same Observer
-    final currentQuery = searchQuery();
-    if (currentQuery.isEmpty) return;
+    final count = searchResult();
+    if (count == 0) return;
 
+    print("Got $count Results");
+  });
+
+  reactor(() {
+    final state = searchResource();
+    if (state is ResourceError) {
+      print("ERROR: \${(state as ResourceError).error}");
+    }
+  });
+
+  final queue = Completer<void>();
+  bool isFirstRun = true;
+
+  reactor(() {
     final searchState = searchResource();
 
-    final message = switch (searchState) {
-      ResourceLoading(:final data) =>
-        data != null
-            ? "Searching for '$currentQuery' (Keeping stale data: $data)..."
-            : "Searching for '$currentQuery'...",
-      ResourceLoaded(:final data) => "Got $data results for '$currentQuery'",
-      ResourceError(:final error) =>
-        "Failed to get results for '$currentQuery': $error",
-    };
+    if (searchState is ResourceLoading && !isFirstRun) return;
 
-    print(message);
+    if (queries.isNotEmpty) {
+      final nextQuery = queries.removeLast();
+
+      scheduleMicrotask(() {
+        searchQuery.dispatch(.run(handler: (_) => nextQuery));
+      });
+
+      isFirstRun = false;
+    } else {
+      if (!queue.isCompleted) {
+        queue.complete();
+      }
+    }
   });
 
-  final stream = Stream.periodic(.new(seconds: 3), (_) {
-    if (queries.isEmpty) return;
-
-    searchQuery.dispatch(.run(handler: (_) => queries.removeLast()));
-  });
-
-  await stream.forEach((_) {});
+  await queue.future;
 
   client.close();
 }
