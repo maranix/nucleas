@@ -14,11 +14,13 @@ Resource<T> resource<T>(
   Future<T> Function() compute, {
   Scope? scope,
   EqualityCallback<T>? equals,
+  FilterCallback<T>? filter,
   String? debugLabel,
 }) => _ResourceImpl<T>(
   compute,
   scope: scope,
   equals: equals,
+  filter: filter,
   debugLabel: debugLabel,
 );
 
@@ -27,9 +29,11 @@ final class _ResourceImpl<T> extends RelayNode<T> implements Resource<T> {
     this._compute, {
     Scope? scope,
     EqualityCallback<T>? equals,
+    FilterCallback<T>? filter,
     super.debugLabel,
   }) : _scope = scope ?? Valence.root,
-       _equals = equals ?? defaultEquals {
+       _equals = equals ?? defaultEquals,
+       _filter = filter {
     _scope.addRoot(this);
   }
 
@@ -38,6 +42,7 @@ final class _ResourceImpl<T> extends RelayNode<T> implements Resource<T> {
   final Scope _scope;
 
   final EqualityCallback<T> _equals;
+  final FilterCallback<T>? _filter;
 
   ResourceState<T> _state = .loading();
 
@@ -49,6 +54,8 @@ final class _ResourceImpl<T> extends RelayNode<T> implements Resource<T> {
   Scope get scope => _scope;
   @override
   EqualityCallback<T> get equals => _equals;
+  @override
+  FilterCallback<T>? get filter => _filter;
 
   @override
   ResourceState<T> call() {
@@ -105,6 +112,7 @@ final class _ResourceImpl<T> extends RelayNode<T> implements Resource<T> {
     };
 
     if (unchanged) return;
+    if (filter != null && !filter!(data)) return;
 
     _state = .loaded(data);
     notifyDependents();

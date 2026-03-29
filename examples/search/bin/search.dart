@@ -6,7 +6,15 @@ import 'package:valence/valence.dart';
 
 const baseURL = "dummyjson.com";
 
-final queries = <String>["phone", "mobile", "watch", "car", "table", "bottle"];
+final queries = <String>[
+  "phone",
+  "mobile",
+  "watch",
+  "car",
+  "table",
+  "",
+  "bottle",
+];
 
 final client = http.Client();
 
@@ -23,7 +31,7 @@ Future<int> _searchProducts(String query) async {
 }
 
 void main() async {
-  final searchQuery = store("");
+  final searchQuery = store("", filter: (q) => q.isNotEmpty);
 
   final searchResource = resource(() {
     final q = searchQuery();

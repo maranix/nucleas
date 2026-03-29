@@ -12,7 +12,7 @@ abstract base class BaseNode implements Node {
 }
 
 abstract base class OriginNode<T> extends BaseNode
-    with SourceMixin, DisposeMixin, EqualityMixin<T> {
+    with SourceMixin, DisposeMixin, EqualityMixin<T>, FilterMixin<T> {
   OriginNode({super.debugLabel});
 
   @override
@@ -27,7 +27,7 @@ abstract base class OriginNode<T> extends BaseNode
 }
 
 abstract base class RelayNode<T> extends BaseNode
-    with SourceMixin, SubscriberMixin, DisposeMixin, EqualityMixin<T> {
+    with SourceMixin, SubscriberMixin, DisposeMixin, EqualityMixin<T>, FilterMixin<T> {
   RelayNode({super.debugLabel});
 
   @override
@@ -127,6 +127,16 @@ mixin EqualityMixin<T> on Node {
   /// The equality function used to compare values of type [T].
   @protected
   EqualityCallback<T> get equals;
+}
+
+/// Provides conditionally halting of the value update via a [filter] callback.
+///
+/// If [filter] returns false, the node drops the pending state
+/// and skips notifying its dependents.
+mixin FilterMixin<T> on Node {
+  /// The filter condition evaluated for any incoming state of type [T].
+  @protected
+  FilterCallback<T>? get filter;
 }
 
 /// Manages disposal state for a [Node].
@@ -315,12 +325,9 @@ mixin SubscriberMixin on Node implements Dependent {
     if (newDepth > _depth) {
       _depth = newDepth;
 
-      assert(
-        this is Source,
-        'Type Error: Illegal attempt to propagate depth from a non-Source node.',
-      );
-
-      (this as Source).propagateDepth(newDepth);
+      if (this is Source) {
+        (this as Source).propagateDepth(newDepth);
+      }
     }
   }
 

@@ -22,8 +22,15 @@ Store<S, A> store<S, A extends Action<S>>(
   S initial, {
   Scope? scope,
   EqualityCallback<S>? equals,
+  FilterCallback<S>? filter,
   String? debugLabel,
-}) => _StoreImpl<S, A>(initial, scope: scope, eq: equals, debugLabel: debugLabel);
+}) => _StoreImpl<S, A>(
+  initial,
+  scope: scope,
+  eq: equals,
+  filter: filter,
+  debugLabel: debugLabel,
+);
 
 final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
     implements Store<S, A> {
@@ -31,6 +38,7 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
     this._value, {
     Scope? scope,
     EqualityCallback<S>? eq,
+    FilterCallback<S>? filter,
     super.debugLabel,
   }) : assert(
          _value is! Node,
@@ -40,12 +48,14 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
          '\nbe contained within another Store. To combine sources, use a Derive instead.',
        ),
        _scope = scope ?? Valence.root,
-       _equals = eq ?? defaultEquals {
+       _equals = eq ?? defaultEquals,
+       _filter = filter {
     _scope.addRoot(this);
   }
 
   final Scope _scope;
   final EqualityCallback<S> _equals;
+  final FilterCallback<S>? _filter;
 
   S _value;
 
@@ -54,6 +64,9 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
 
   @override
   EqualityCallback<S> get equals => _equals;
+
+  @override
+  FilterCallback<S>? get filter => _filter;
 
   @override
   S call() {
@@ -79,6 +92,7 @@ final class _StoreImpl<S, A extends Action<S>> extends OriginNode<S>
     );
 
     if (equals(_value, next)) return;
+    if (filter != null && !filter!(next)) return;
 
     _value = next;
 

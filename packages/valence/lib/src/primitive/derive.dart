@@ -17,23 +17,33 @@ Derive<T> derive<T>(
   ValueCallback<T> fn, {
   Scope? scope,
   EqualityCallback<T>? equals,
+  FilterCallback<T>? filter,
   String? debugLabel,
-}) => _DeriveImpl<T>(fn, scope: scope, eq: equals, debugLabel: debugLabel);
+}) => _DeriveImpl<T>(
+  fn,
+  scope: scope,
+  eq: equals,
+  filter: filter,
+  debugLabel: debugLabel,
+);
 
 final class _DeriveImpl<T> extends RelayNode<T> implements Derive<T> {
   _DeriveImpl(
     this._compute, {
     Scope? scope,
     EqualityCallback<T>? eq,
+    FilterCallback<T>? filter,
     super.debugLabel,
   }) : _scope = scope ?? Valence.root,
-       _equals = eq ?? defaultEquals {
+       _equals = eq ?? defaultEquals,
+       _filter = filter {
     _scope.addRoot(this);
   }
 
   final Scope _scope;
   final ValueCallback<T> _compute;
   final EqualityCallback<T> _equals;
+  final FilterCallback<T>? _filter;
 
   late T _cachedValue;
   bool _isInitialized = false;
@@ -43,6 +53,9 @@ final class _DeriveImpl<T> extends RelayNode<T> implements Derive<T> {
 
   @override
   EqualityCallback<T> get equals => _equals;
+
+  @override
+  FilterCallback<T>? get filter => _filter;
 
   @override
   T call() {
@@ -78,6 +91,7 @@ final class _DeriveImpl<T> extends RelayNode<T> implements Derive<T> {
 
     // If the value didn't actually change, we just cache and exit cleanly
     if (equals(_cachedValue, nextValue)) return;
+    if (filter != null && !filter!(nextValue)) return;
 
     _cachedValue = nextValue;
 
