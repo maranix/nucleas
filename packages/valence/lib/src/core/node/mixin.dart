@@ -18,21 +18,13 @@ mixin ListenableNode<T> on Node implements Listenable<T> {
 mixin SchedulableNode on Node {
   int depth = 0;
 
+  bool isScheduled = false;
+
   final Set<Node> _currentDeps = .new();
 
   S _listen<S>(Listenable<S> node) {
     _currentDeps.add(node as Node);
     return node.value;
-  }
-
-  void _scheduleNodes() {
-    if (this is! Downstream) return;
-
-    final self = this as Downstream<SchedulableNode>;
-
-    for (final node in self.downstreamNodes) {
-      _scope.scheduler.scheduleNode(node);
-    }
   }
 
   void _commitDeps() {

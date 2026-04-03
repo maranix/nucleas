@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:valence/src/core/node/nodes.dart';
 
 abstract interface class NodeScheduler {
@@ -13,17 +14,18 @@ abstract interface class NodeScheduler {
 final class _NodeSchedulerImpl implements NodeScheduler {
   _NodeSchedulerImpl();
 
-  final Set<SchedulableNode> _queue = .new();
-  final Set<SchedulableNode> _dirtyNodes = .new();
+  final PriorityQueue<SchedulableNode> _queue = .new(
+    (a, b) => a.depth.compareTo(b.depth),
+  );
 
   bool _flushing = false;
 
   @override
   void scheduleNode(SchedulableNode node) {
-    if (_dirtyNodes.contains(node)) return;
+    if (node.isScheduled) return;
 
+    node.isScheduled = true;
     _queue.add(node);
-    _dirtyNodes.add(node);
 
     _tryFlush();
   }
@@ -31,10 +33,10 @@ final class _NodeSchedulerImpl implements NodeScheduler {
   @override
   void scheduleNodes(Iterable<SchedulableNode> nodes) {
     for (final node in nodes) {
-      if (_dirtyNodes.contains(node)) continue;
+      if (node.isScheduled) continue;
 
+      node.isScheduled = true;
       _queue.add(node);
-      _dirtyNodes.add(node);
     }
 
     _tryFlush();
@@ -47,25 +49,17 @@ final class _NodeSchedulerImpl implements NodeScheduler {
   }
 
   void _flush() {
-    if (_queue.isEmpty) {
-      _flushing = false;
-      return;
-    }
+    if (_flushing) return;
 
     _flushing = true;
 
-    final batch = _queue.toList();
-    _queue.clear();
+    while (_queue.isNotEmpty) {
+      final node = _queue.removeFirst();
+      node.isScheduled = false;
 
-    batch.sort((a, b) {
-      return a.depth.compareTo(b.depth);
-    });
-
-    for (final node in batch) {
-      _dirtyNodes.remove(node);
       node.refresh();
     }
 
-    _flush();
+    _flushing = false;
   }
 }

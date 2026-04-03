@@ -101,7 +101,7 @@ abstract base class RelayNode<T> extends Node
     _cachedValue = _fn(_listen);
 
     _commitDeps();
-    _scheduleNodes();
+    _scope.scheduler.scheduleNodes(downstreamNodes);
   }
 }
 
