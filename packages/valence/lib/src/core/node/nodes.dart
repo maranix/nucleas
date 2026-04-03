@@ -28,17 +28,12 @@ abstract class Node {
   /// Whether this node was disposed.
   bool get disposed => _disposed;
 
-  // Depth of this node, in the Graph
-  int depth = 0;
-
   /// Marks this node as disposed and tear down its dependents & dependencies
   @mustCallSuper
   void dispose() {
     if (_disposed) return;
 
-    depth = 0;
     _disposed = true;
-
     _scope.registry.destroy(this);
   }
 }
@@ -65,7 +60,7 @@ abstract base class SourceNode<T, A extends Action<T>> extends Node
 }
 
 abstract base class SelectorNode<T, S> extends Node
-    with ListenableNode<T>, Downstream {
+    with ListenableNode<T>, Downstream<SchedulableNode> {
   SelectorNode(this._store, this._fn, {super.scope, super.label}) {
     _cachedValue = _fn(_store._state);
     _store.downstreamNodes.add(this);
@@ -84,12 +79,16 @@ abstract base class SelectorNode<T, S> extends Node
 
     _cachedValue = nextVal;
 
-    _scheduleDownstreamNodes();
+    _scope.scheduler.scheduleNodes(downstreamNodes);
   }
 }
 
 abstract base class RelayNode<T> extends Node
-    with ListenableNode<T>, Upstream, Downstream, Refreshable {
+    with
+        ListenableNode<T>,
+        Downstream<SchedulableNode>,
+        Upstream,
+        SchedulableNode {
   RelayNode(this._fn, {super.scope, super.label}) {
     _cachedValue = _fn(_listen);
     _commitDeps();
@@ -102,11 +101,11 @@ abstract base class RelayNode<T> extends Node
     _cachedValue = _fn(_listen);
 
     _commitDeps();
-    _scheduleDownstreamNodes();
+    _scheduleNodes();
   }
 }
 
-abstract base class ObserverNode extends Node with Upstream, Refreshable {
+abstract base class ObserverNode extends Node with Upstream, SchedulableNode {
   ObserverNode(this._fn, {super.scope, super.label}) {
     refresh();
   }

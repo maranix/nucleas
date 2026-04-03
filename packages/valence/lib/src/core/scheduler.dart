@@ -5,41 +5,45 @@ import 'package:valence/src/core/node/nodes.dart';
 abstract interface class NodeScheduler {
   factory NodeScheduler() => _NodeSchedulerImpl();
 
-  void scheduleNode(Node node);
+  void scheduleNode(SchedulableNode node);
 
-  void scheduleNodes(List<Node> nodes);
+  void scheduleNodes(Iterable<SchedulableNode> nodes);
 }
 
 final class _NodeSchedulerImpl implements NodeScheduler {
   _NodeSchedulerImpl();
 
-  final Set<Node> _queue = .new();
-  final Set<Node> _dirtyNodes = .new();
+  final Set<SchedulableNode> _queue = .new();
+  final Set<SchedulableNode> _dirtyNodes = .new();
 
   bool _flushing = false;
 
   @override
-  void scheduleNode(Node node) {
+  void scheduleNode(SchedulableNode node) {
     if (_dirtyNodes.contains(node)) return;
 
     _queue.add(node);
     _dirtyNodes.add(node);
 
-    if (!_flushing) {
-      scheduleMicrotask(_flush);
-    }
+    _tryFlush();
   }
 
   @override
-  void scheduleNodes(List<Node> nodes) {
+  void scheduleNodes(Iterable<SchedulableNode> nodes) {
     for (final node in nodes) {
+      if (_dirtyNodes.contains(node)) continue;
+
       _queue.add(node);
       _dirtyNodes.add(node);
     }
 
-    if (!_flushing) {
-      scheduleMicrotask(_flush);
-    }
+    _tryFlush();
+  }
+
+  void _tryFlush() {
+    if (_flushing) return;
+
+    scheduleMicrotask(_flush);
   }
 
   void _flush() {
@@ -58,8 +62,6 @@ final class _NodeSchedulerImpl implements NodeScheduler {
     });
 
     for (final node in batch) {
-      if (node is! Refreshable) continue;
-
       _dirtyNodes.remove(node);
       node.refresh();
     }

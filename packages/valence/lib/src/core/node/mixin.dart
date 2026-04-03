@@ -6,12 +6,6 @@ mixin Upstream<T extends Node> on Node {
 
 mixin Downstream<T extends Node> on Node {
   Set<T> downstreamNodes = .new();
-
-  void _scheduleDownstreamNodes() {
-    for (final node in downstreamNodes) {
-      _scope.scheduler.scheduleNode(node);
-    }
-  }
 }
 
 mixin ListenableNode<T> on Node implements Listenable<T> {
@@ -21,12 +15,24 @@ mixin ListenableNode<T> on Node implements Listenable<T> {
   T get value => _cachedValue;
 }
 
-mixin Refreshable on Node {
+mixin SchedulableNode on Node {
+  int depth = 0;
+
   final Set<Node> _currentDeps = .new();
 
   S _listen<S>(Listenable<S> node) {
     _currentDeps.add(node as Node);
     return node.value;
+  }
+
+  void _scheduleNodes() {
+    if (this is! Downstream) return;
+
+    final self = this as Downstream<SchedulableNode>;
+
+    for (final node in self.downstreamNodes) {
+      _scope.scheduler.scheduleNode(node);
+    }
   }
 
   void _commitDeps() {
@@ -60,8 +66,10 @@ mixin Refreshable on Node {
 
     int maxDepth = -1;
     for (final node in curr) {
-      if (node.depth > maxDepth) {
-        maxDepth = node.depth;
+      if (node is SchedulableNode) {
+        if (node.depth > maxDepth) {
+          maxDepth = node.depth;
+        }
       }
     }
 
