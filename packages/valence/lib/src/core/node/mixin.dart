@@ -1,11 +1,11 @@
 part of 'nodes.dart';
 
 mixin Upstream<T extends Node> on Node {
-  Set<T> upstreamNodes = .new();
+  List<T> upstreamNodes = [];
 }
 
 mixin Downstream<T extends Node> on Node {
-  Set<T> downstreamNodes = .new();
+  List<T> downstreamNodes = [];
 }
 
 mixin ListenableNode<T> on Node implements Listenable<T> {
@@ -20,7 +20,7 @@ mixin SchedulableNode on Node {
 
   bool isScheduled = false;
 
-  final Set<Node> _currentDeps = .new();
+  final List<Node> _currentDeps = [];
 
   S _listen<S>(Listenable<S> node) {
     _currentDeps.add(node as Node);
@@ -35,38 +35,44 @@ mixin SchedulableNode on Node {
 
     final self = this as Upstream;
     final old = self.upstreamNodes;
-    final curr = _currentDeps;
+    final newDeps = _currentDeps;
 
-    final removed = old.difference(curr);
-    final added = curr.difference(old);
+    bool changed = old.length != newDeps.length;
 
-    for (final parent in removed) {
-      if (parent is Downstream) {
-        parent.downstreamNodes.remove(this);
-      }
-    }
-
-    for (final parent in added) {
-      if (parent is Downstream) {
-        parent.downstreamNodes.add(this);
-      }
-    }
-
-    old
-      ..clear()
-      ..addAll(curr);
-
-    int maxDepth = -1;
-    for (final node in curr) {
-      if (node is SchedulableNode) {
-        if (node.depth > maxDepth) {
-          maxDepth = node.depth;
+    if (!changed) {
+      for (int i = 0; i < old.length; i++) {
+        if (old[i] != newDeps[i]) {
+          changed = true;
+          break;
         }
       }
     }
 
-    depth = maxDepth + 1;
+    if (!changed) {
+      _currentDeps.clear();
+      return;
+    }
 
+    for (final parent in old) {
+      if (!newDeps.contains(parent) && parent is Downstream) {
+        parent.downstreamNodes.remove(this);
+      }
+    }
+
+    int maxDepth = -1;
+    for (final parent in newDeps) {
+      if (!old.contains(parent) && parent is Downstream) {
+        parent.downstreamNodes.add(this);
+      }
+
+      if (parent is SchedulableNode && parent.depth > maxDepth) {
+        maxDepth = parent.depth;
+      }
+    }
+
+    self.upstreamNodes = newDeps.toList();
+
+    depth = maxDepth + 1;
     _currentDeps.clear();
   }
 
