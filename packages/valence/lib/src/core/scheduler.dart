@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:valence/src/core/node/nodes.dart';
 
 abstract interface class NodeScheduler {
@@ -24,7 +23,11 @@ final class _NodeSchedulerImpl implements NodeScheduler {
   bool _flushing = false;
   bool get _batching => _batchDepth > 0;
 
-  final List<List<SchedulableNode>> _buckets = .generate(100, (_) => []);
+  final List<List<SchedulableNode>> _buckets = .generate(
+    100,
+    (_) => [],
+    growable: false,
+  );
 
   @override
   void scheduleNode(SchedulableNode node) {
