@@ -23,7 +23,7 @@ abstract interface class Scope implements ValenceScope {
 final class _ScopeImpl implements Scope, ValenceScope {
   _ScopeImpl({NodeRegistry? registry, NodeScheduler? scheduler})
     : _registry = registry ?? .new() {
-    _scheduler = scheduler ?? .new(_registry);
+    _scheduler = scheduler ?? .new();
   }
 
   final NodeRegistry _registry;

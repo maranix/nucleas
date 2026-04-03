@@ -1,74 +1,74 @@
 part of 'nodes.dart';
 
-// TODO: Cleanup messy mixins to avoid [is] checks in Registry.
-
-/// Mixin to track dependent [child] nodes.
-mixin ChildNodes on NodeMetadata {
-  /// The set of IDs of nodes that depend on this node.
-  final Set<int> children = <int>{};
+mixin Upstream<T extends Node> on Node {
+  Set<T> upstreamNodes = .new();
 }
 
-/// Mixin to track dependencies [Parent] nodes.
-///
-/// Nodes that have parents are dependents hence they are bound to have depth property.
-mixin ParentNodes on NodeMetadata {
-  /// The set of IDs of nodes this node depends on.
-  final Set<int> parents = <int>{};
+mixin Downstream<T extends Node> on Node {
+  Set<T> downstreamNodes = .new();
 
-  int _depth = -1;
+  void _scheduleDownstreamNodes() {
+    for (final node in downstreamNodes) {
+      _scope.scheduler.scheduleNode(node);
+    }
+  }
+}
 
-  /// The current depth of the node.
-  int get depth => _depth;
+mixin ListenableNode<T> on Node implements Listenable<T> {
+  late T _cachedValue;
 
-  set depth(int d) {
-    if (d <= 0) {
-      throw RangeError.value(
-        d,
-        "depth",
-        "Invalid topological sort: A consumer node's depth must be >= 1.",
-      );
+  @override
+  T get value => _cachedValue;
+}
+
+mixin Refreshable on Node {
+  final Set<Node> _currentDeps = .new();
+
+  S _listen<S>(Listenable<S> node) {
+    _currentDeps.add(node as Node);
+    return node.value;
+  }
+
+  void _commitDeps() {
+    if (this is! Upstream) {
+      _currentDeps.clear();
+      return;
     }
 
-    _depth = d;
+    final self = this as Upstream;
+    final old = self.upstreamNodes;
+    final curr = _currentDeps;
+
+    final removed = old.difference(curr);
+    final added = curr.difference(old);
+
+    for (final parent in removed) {
+      if (parent is Downstream) {
+        parent.downstreamNodes.remove(this);
+      }
+    }
+
+    for (final parent in added) {
+      if (parent is Downstream) {
+        parent.downstreamNodes.add(this);
+      }
+    }
+
+    old
+      ..clear()
+      ..addAll(curr);
+
+    int maxDepth = -1;
+    for (final node in curr) {
+      if (node.depth > maxDepth) {
+        maxDepth = node.depth;
+      }
+    }
+
+    depth = maxDepth + 1;
+
+    _currentDeps.clear();
   }
+
+  void refresh();
 }
-
-/// Mixin for nodes that can be marked as dirty.
-mixin NodeDirtyState on NodeMetadata {
-  bool _dirty = false;
-
-  /// Whether the node is marked as dirty.
-  bool get dirty => _dirty;
-
-  /// Marks the node as dirty.
-  void markDirty() {
-    _dirty = true;
-  }
-
-  /// Unmarks the node as dirty.
-  void unmarkDirty() {
-    _dirty = false;
-  }
-}
-
-/// Base class for all node metadata.
-///
-/// Subclasses define specific properties and behaviors for different node types.
-sealed class NodeMetadata {}
-
-/// Metadata for source nodes.
-final class SourceNodeMetadata extends NodeMetadata with ChildNodes {}
-
-/// Metadata for selector nodes.
-final class SelectorNodeMetadata extends NodeMetadata with ChildNodes {
-  SelectorNodeMetadata(this.sourceId);
-
-  final int sourceId;
-}
-
-/// Metadata for relay nodes.
-final class RelayNodeMetadata extends NodeMetadata
-    with ParentNodes, ChildNodes {}
-
-/// Metadata for observer nodes.
-final class ObserverNodeMetadata extends NodeMetadata with ParentNodes {}

@@ -1,31 +1,29 @@
 import 'dart:async';
 
 import 'package:valence/src/core/node/nodes.dart';
-import 'package:valence/src/core/registry.dart';
 
 abstract interface class NodeScheduler {
-  factory NodeScheduler(NodeRegistry registry) => _NodeSchedulerImpl(registry);
+  factory NodeScheduler() => _NodeSchedulerImpl();
 
-  void scheduleNode(int id);
-  void scheduleNodes(List<int> ids);
+  void scheduleNode(Node node);
+
+  void scheduleNodes(List<Node> nodes);
 }
 
 final class _NodeSchedulerImpl implements NodeScheduler {
-  _NodeSchedulerImpl(this._registry);
+  _NodeSchedulerImpl();
 
-  final NodeRegistry _registry;
-
-  final Set<int> _queue = .new();
-  final Set<int> _dirtyIds = .new();
+  final Set<Node> _queue = .new();
+  final Set<Node> _dirtyNodes = .new();
 
   bool _flushing = false;
 
   @override
-  void scheduleNode(int id) {
-    if (_dirtyIds.contains(id)) return;
+  void scheduleNode(Node node) {
+    if (_dirtyNodes.contains(node)) return;
 
-    _queue.add(id);
-    _dirtyIds.add(id);
+    _queue.add(node);
+    _dirtyNodes.add(node);
 
     if (!_flushing) {
       scheduleMicrotask(_flush);
@@ -33,8 +31,11 @@ final class _NodeSchedulerImpl implements NodeScheduler {
   }
 
   @override
-  void scheduleNodes(List<int> ids) {
-    _queue.addAll(ids);
+  void scheduleNodes(List<Node> nodes) {
+    for (final node in nodes) {
+      _queue.add(node);
+      _dirtyNodes.add(node);
+    }
 
     if (!_flushing) {
       scheduleMicrotask(_flush);
@@ -53,18 +54,14 @@ final class _NodeSchedulerImpl implements NodeScheduler {
     _queue.clear();
 
     batch.sort((a, b) {
-      final depthA = _registry.resolveNodeMetadata<ParentNodes>(a)?.depth ?? 0;
-      final depthB = _registry.resolveNodeMetadata<ParentNodes>(b)?.depth ?? 0;
-
-      return depthA.compareTo(depthB);
+      return a.depth.compareTo(b.depth);
     });
 
-    for (final id in batch) {
-      _dirtyIds.remove(id);
+    for (final node in batch) {
+      if (node is! Refreshable) continue;
 
-      final node = _registry.resolveNode<Refreshable>(id);
-
-      node?.refresh();
+      _dirtyNodes.remove(node);
+      node.refresh();
     }
 
     _flush();

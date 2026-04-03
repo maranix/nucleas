@@ -7,8 +7,6 @@ part 'mixin.dart';
 
 /// The universal contract for any node that can be subscribed to.
 abstract interface class Listenable<T> {
-  int get id;
-
   T get value;
 }
 
@@ -16,16 +14,10 @@ abstract class Node {
   Node({Scope? scope, String? label})
     : _scope = (scope ?? rootScope),
       _label = label {
-    _id = _scope.registry.allocateId();
     _scope.registry.registerNode(this);
   }
 
   final Scope _scope;
-
-  late final int _id;
-
-  /// Id of this Node.
-  int get id => _id;
 
   final String? _label;
 
@@ -36,48 +28,23 @@ abstract class Node {
   /// Whether this node was disposed.
   bool get disposed => _disposed;
 
+  // Depth of this node, in the Graph
+  int depth = 0;
+
   /// Marks this node as disposed and tear down its dependents & dependencies
   @mustCallSuper
   void dispose() {
     if (_disposed) return;
 
+    depth = 0;
     _disposed = true;
-    _scope.registry.unregisterNode(this);
+
+    _scope.registry.destroy(this);
   }
 }
 
-mixin ListenableNode<T> on Node implements Listenable<T> {
-  late T _cachedValue;
-
-  @override
-  T get value => _cachedValue;
-
-  void notifyDependents() {
-    final dependents = _scope.registry.resolveDependents<Refreshable>(this);
-
-    for (final dep in dependents) {
-      _scope.scheduler.scheduleNode(dep.id);
-    }
-  }
-}
-
-mixin Refreshable on Node {
-  final Set<int> _currentDeps = .new();
-
-  S _listen<S>(Listenable<S> node) {
-    _currentDeps.add(node.id);
-    return node.value;
-  }
-
-  void _commitDeps() {
-    _scope.registry.reconcileDependencies(id, _currentDeps);
-    _currentDeps.clear();
-  }
-
-  void refresh();
-}
-
-abstract base class SourceNode<T, A extends Action<T>> extends Node {
+abstract base class SourceNode<T, A extends Action<T>> extends Node
+    with Downstream<SelectorNode> {
   SourceNode(this._state, {super.scope, super.label});
 
   T _state;
@@ -90,43 +57,39 @@ abstract base class SourceNode<T, A extends Action<T>> extends Node {
     if (identical(_state, next)) return;
 
     _state = next;
-    notifyDependents();
-  }
 
-  void notifyDependents() {
-    final selectors = _scope.registry.resolveDependents<SelectorNode>(this);
-
-    for (final selector in selectors) {
-      selector.refresh();
+    for (final selector in downstreamNodes) {
+      selector.notify();
     }
   }
 }
 
-abstract base class SelectorNode<T, S> extends Node with ListenableNode<T> {
+abstract base class SelectorNode<T, S> extends Node
+    with ListenableNode<T>, Downstream {
   SelectorNode(this._store, this._fn, {super.scope, super.label}) {
     _cachedValue = _fn(_store._state);
-    _scope.registry.linkSelector(this, _store);
+    _store.downstreamNodes.add(this);
   }
 
   final SourceNode<S, Action<S>> _store;
 
   final T Function(S) _fn;
 
-  int get storeId => _store.id;
+  SourceNode<S, Action<S>> get store => _store;
 
-  void refresh() {
+  void notify() {
     final nextVal = _fn(_store._state);
 
     if (identical(nextVal, _cachedValue)) return;
 
     _cachedValue = nextVal;
 
-    notifyDependents();
+    _scheduleDownstreamNodes();
   }
 }
 
 abstract base class RelayNode<T> extends Node
-    with ListenableNode<T>, Refreshable {
+    with ListenableNode<T>, Upstream, Downstream, Refreshable {
   RelayNode(this._fn, {super.scope, super.label}) {
     _cachedValue = _fn(_listen);
     _commitDeps();
@@ -139,11 +102,11 @@ abstract base class RelayNode<T> extends Node
     _cachedValue = _fn(_listen);
 
     _commitDeps();
-    notifyDependents();
+    _scheduleDownstreamNodes();
   }
 }
 
-abstract base class ObserverNode extends Node with Refreshable {
+abstract base class ObserverNode extends Node with Upstream, Refreshable {
   ObserverNode(this._fn, {super.scope, super.label}) {
     refresh();
   }
