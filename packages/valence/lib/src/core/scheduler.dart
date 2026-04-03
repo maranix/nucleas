@@ -9,6 +9,8 @@ abstract interface class NodeScheduler {
   void scheduleNode(SchedulableNode node);
 
   void scheduleNodes(Iterable<SchedulableNode> nodes);
+
+  void batch(void Function() fn);
 }
 
 final class _NodeSchedulerImpl implements NodeScheduler {
@@ -17,9 +19,12 @@ final class _NodeSchedulerImpl implements NodeScheduler {
   int _maxDepth = 100;
   int _lowestQueuedDepth = 999999;
 
-  final List<List<SchedulableNode>> _buckets = .filled(100, []);
+  int _batchDepth = 0;
 
   bool _flushing = false;
+  bool get _batching => _batchDepth > 0;
+
+  final List<List<SchedulableNode>> _buckets = .filled(100, []);
 
   @override
   void scheduleNode(SchedulableNode node) {
@@ -53,8 +58,23 @@ final class _NodeSchedulerImpl implements NodeScheduler {
     _tryFlush();
   }
 
+  @override
+  void batch(void Function() fn) {
+    _batchDepth++;
+
+    try {
+      fn();
+    } finally {
+      _batchDepth--;
+
+      if (!_batching) {
+        _tryFlush();
+      }
+    }
+  }
+
   void _tryFlush() {
-    if (_flushing) return;
+    if (_flushing || _batching) return;
 
     scheduleMicrotask(_flush);
   }
