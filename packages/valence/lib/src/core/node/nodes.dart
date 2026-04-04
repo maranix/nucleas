@@ -12,7 +12,7 @@ abstract interface class Subscribable<T> {
 
 abstract class Node {
   Node({ValenceScope? scope, String? label})
-    : _scope = Scope.of(scope ?? Valence.rootScope),
+    : _scope = Scope.of(scope ?? Valence.scope),
       _label = label {
     _scope.registry.registerNode(this);
   }
