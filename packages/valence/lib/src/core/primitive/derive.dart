@@ -3,7 +3,7 @@ import 'package:valence/src/core/scope.dart';
 
 Derive<T> derive<T>(
   T Function(S Function<S>(Subscribable<S>)) fn, {
-  Scope? scope,
+  ValenceScope? scope,
   String? label,
 }) => _DeriveImpl(fn, scope: scope, label: label);
 

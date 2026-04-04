@@ -5,9 +5,9 @@ import 'package:valence/src/core/scope.dart';
 
 Store<S, A> store<S, A extends Action<S>>(
   S val, {
-  Scope? scope,
+  ValenceScope? scope,
   String? label,
-}) => _StoreImpl(val, scope: scope ?? rootScope, label: label);
+}) => _StoreImpl(val, scope: scope ?? Valence.rootScope, label: label);
 
 abstract interface class Store<S, A extends Action<S>> {
   Select<R> select<R>(R Function(S) fn, {String? label});

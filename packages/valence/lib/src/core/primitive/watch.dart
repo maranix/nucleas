@@ -3,7 +3,7 @@ import 'package:valence/src/core/scope.dart';
 
 Watch watch(
   void Function(S Function<S>(Subscribable<S>)) fn, {
-  Scope? scope,
+  ValenceScope? scope,
   String? label,
 }) => _WatchImpl(fn, scope: scope, label: label);
 

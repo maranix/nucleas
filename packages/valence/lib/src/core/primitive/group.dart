@@ -1,7 +1,7 @@
 import 'package:valence/src/constants.dart';
 import 'package:valence/src/core/scope.dart';
 
-void group(void Function() fn, {Scope? scope}) {
-  final s = scope ?? rootScope;
+void group(void Function() fn, {ValenceScope? scope}) {
+  final s = Scope.of(scope ?? Valence.rootScope);
   s.scheduler.batch(fn);
 }

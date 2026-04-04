@@ -15,6 +15,8 @@ abstract interface class ValenceScope {
 abstract interface class Scope implements ValenceScope {
   factory Scope() = _ScopeImpl;
 
+  static Scope of(ValenceScope scope) => scope as Scope;
+
   NodeRegistry get registry;
 
   NodeScheduler get scheduler;
@@ -22,13 +24,12 @@ abstract interface class Scope implements ValenceScope {
 
 final class _ScopeImpl implements Scope, ValenceScope {
   _ScopeImpl({NodeRegistry? registry, NodeScheduler? scheduler})
-    : _registry = registry ?? .new() {
-    _scheduler = scheduler ?? .new();
-  }
+    : _registry = registry ?? .new(),
+      _scheduler = scheduler ?? .new();
 
   final NodeRegistry _registry;
 
-  late final NodeScheduler _scheduler;
+  final NodeScheduler _scheduler;
 
   @override
   NodeRegistry get registry => _registry;
