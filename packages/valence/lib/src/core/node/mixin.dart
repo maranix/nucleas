@@ -1,19 +1,21 @@
 part of 'nodes.dart';
 
-mixin Upstream<T extends Node> on Node {
-  List<T> upstreamNodes = [];
-}
-
-mixin Downstream<T extends Node> on Node {
-  List<T> downstreamNodes = [];
-}
-
-mixin ListenableNode<T> on Node implements Listenable<T> {
-  late T _cachedValue;
+mixin Value<T> on Node implements Subscribable<T> {
+  late T _value;
 
   @override
-  T get value => _cachedValue;
+  T call() => _value;
+}
 
+mixin UpstreamChain<T extends Node> on Node {
+  List<T> upstream = [];
+}
+
+mixin DownstreamChain<T extends Node> on Node {
+  List<T> downstream = [];
+}
+
+mixin Listener<T> on Value<T> implements Subscribable<T> {
   final List<void Function(T)> _listeners = [];
 
   void addListener(void Function(T) fn) => _listeners.add(fn);
@@ -23,38 +25,32 @@ mixin ListenableNode<T> on Node implements Listenable<T> {
   void _notifyListeners() {
     if (_listeners.isEmpty) return;
     for (int i = 0; i < _listeners.length; i++) {
-      _listeners[i](_cachedValue);
+      _listeners[i](_value);
     }
   }
 }
 
-mixin SchedulableNode on Node {
+mixin Schedulable on Node, UpstreamChain {
   int depth = 0;
 
   bool isScheduled = false;
 
   final List<Node> _currentDeps = [];
 
-  S _listen<S>(Listenable<S> node) {
+  S _listen<S>(Subscribable<S> node) {
     _currentDeps.add(node as Node);
-    return node.value;
+    return node();
   }
 
   void _commitDeps() {
-    if (this is! Upstream) {
-      _currentDeps.clear();
-      return;
-    }
-
-    final self = this as Upstream;
-    final old = self.upstreamNodes;
+    final currDeps = upstream;
     final newDeps = _currentDeps;
 
-    bool changed = old.length != newDeps.length;
+    bool changed = currDeps.length != newDeps.length;
 
     if (!changed) {
-      for (int i = 0; i < old.length; i++) {
-        if (old[i] != newDeps[i]) {
+      for (int i = 0; i < currDeps.length; i++) {
+        if (currDeps[i] != newDeps[i]) {
           changed = true;
           break;
         }
@@ -66,24 +62,24 @@ mixin SchedulableNode on Node {
       return;
     }
 
-    for (final parent in old) {
-      if (!newDeps.contains(parent) && parent is Downstream) {
-        parent.downstreamNodes.remove(this);
+    for (final parent in currDeps) {
+      if (!newDeps.contains(parent) && parent is DownstreamChain) {
+        parent.downstream.remove(this);
       }
     }
 
     int maxDepth = -1;
     for (final parent in newDeps) {
-      if (!old.contains(parent) && parent is Downstream) {
-        parent.downstreamNodes.add(this);
+      if (!currDeps.contains(parent) && parent is DownstreamChain) {
+        parent.downstream.add(this);
       }
 
-      if (parent is SchedulableNode && parent.depth > maxDepth) {
+      if (parent is Schedulable && parent.depth > maxDepth) {
         maxDepth = parent.depth;
       }
     }
 
-    self.upstreamNodes = newDeps.toList();
+    upstream = newDeps.toList();
 
     depth = maxDepth + 1;
     _currentDeps.clear();

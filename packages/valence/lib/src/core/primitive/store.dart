@@ -12,12 +12,14 @@ Store<S, A> store<S, A extends Action<S>>(
 abstract interface class Store<S, A extends Action<S>> {
   Select<R> select<R>(R Function(S) fn, {String? label});
 
+  Select<S> call();
+
   void dispatch(A action);
 
   void dispose();
 }
 
-abstract interface class Select<T> implements Listenable<T> {
+abstract interface class Select<T> implements Subscribable<T> {
   void addListener(void Function(T) fn);
 
   void removeListener(void Function(T) fn);
@@ -27,14 +29,17 @@ abstract interface class Select<T> implements Listenable<T> {
 
 final class _StoreImpl<S, A extends Action<S>> extends SourceNode<S, A>
     implements Store<S, A> {
-  _StoreImpl(super.state, {super.scope, super.label});
+  _StoreImpl(super._state, {super.scope, super.label});
+
+  @override
+  Select<S> call() => select((s) => s);
 
   @override
   Select<R> select<R>(R Function(S) fn, {String? label}) =>
-      _SelectorImpl(this, fn, scope: scope, label: label);
+      _SelectorImpl(this, fn, label: label);
 }
 
 final class _SelectorImpl<S, T> extends SelectorNode<T, S>
     implements Select<T> {
-  _SelectorImpl(super.store, super.fn, {super.scope, super.label});
+  _SelectorImpl(super._store, super.fn, {super.label});
 }

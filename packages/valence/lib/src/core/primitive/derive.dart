@@ -2,14 +2,12 @@ import 'package:valence/src/core/node/nodes.dart';
 import 'package:valence/src/core/scope.dart';
 
 Derive<T> derive<T>(
-  T Function(S Function<S>(Listenable<S>)) fn, {
+  T Function(S Function<S>(Subscribable<S>)) fn, {
   Scope? scope,
   String? label,
 }) => _DeriveImpl(fn, scope: scope, label: label);
 
-abstract interface class Derive<T> implements Listenable<T> {
-  T call();
-
+abstract interface class Derive<T> implements Subscribable<T> {
   void addListener(void Function(T) fn);
 
   void removeListener(void Function(T) fn);
@@ -18,8 +16,5 @@ abstract interface class Derive<T> implements Listenable<T> {
 }
 
 final class _DeriveImpl<T> extends RelayNode<T> implements Derive<T> {
-  _DeriveImpl(super.fn, {super.scope, super.label});
-
-  @override
-  T call() => value;
+  _DeriveImpl(super._fn, {super.scope, super.label});
 }
