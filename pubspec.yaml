@@ -8,4 +8,4 @@ environment:
 
 workspace:
   - packages/**
-  - examples/**
+  # - examples/**
