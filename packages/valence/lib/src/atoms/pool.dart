@@ -1,4 +1,4 @@
-import 'package:valence/src/core/primitive/derive.dart';
+import 'package:valence/src/core/atom/derive.dart';
 import 'package:valence/src/core/scope.dart';
 
 typedef PoolFn<K, T> =
