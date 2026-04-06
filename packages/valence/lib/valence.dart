@@ -5,7 +5,7 @@ library;
 
 export 'src/core/node/action.dart';
 
-export 'src/core/primitive/store.dart';
-export 'src/core/primitive/derive.dart';
-export 'src/core/primitive/watch.dart';
-export 'src/core/primitive/group.dart';
+export 'src/core/atom/store.dart';
+export 'src/core/atom/derive.dart';
+export 'src/core/atom/watch.dart';
+export 'src/core/atom/group.dart';
