@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 import 'package:valence/src/constants.dart';
 import 'package:valence/src/core/node/action.dart';
 import 'package:valence/src/core/scope.dart';
+import 'package:valence/src/utils/equality.dart';
 
 part 'mixin.dart';
 
@@ -47,7 +48,7 @@ abstract base class SourceNode<T, A extends Action<T>> extends Node
   void dispatch(A action) {
     final next = action.reduce(_state);
 
-    if (identical(_state, next)) return;
+    if (_state == next) return;
 
     _state = next;
 
@@ -59,14 +60,22 @@ abstract base class SourceNode<T, A extends Action<T>> extends Node
 
 abstract base class SelectorNode<T, S> extends Node
     with Value<T>, Listener<T>, DownstreamChain<Schedulable>, Lazy {
-  SelectorNode(this._store, this._fn, {Scope? scope, super.label})
-    : super(scope: scope ?? _store._scope) {
+  SelectorNode(
+    this._store,
+    this._fn, {
+    Scope? scope,
+    bool Function(T, T)? equals,
+    super.label,
+  }) : _equals = equals ?? defaultEquals,
+       super(scope: scope ?? _store._scope) {
     _store.downstream.add(this);
   }
 
   final SourceNode<S, Action<S>> _store;
 
   final T Function(S) _fn;
+
+  final bool Function(T a, T b) _equals;
 
   SourceNode<S, Action<S>> get store => _store;
 
@@ -86,7 +95,7 @@ abstract base class SelectorNode<T, S> extends Node
 
     final nextVal = _fn(_store._state);
 
-    if (_initialized && identical(nextVal, _value)) return;
+    if (_initialized && _equals(_value, nextVal)) return;
 
     _value = nextVal;
 
