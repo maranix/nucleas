@@ -9,7 +9,7 @@ resolution: workspace
 
 dependencies:
   collection: ^1.19.1
-  meta: ^1.18.2
+  meta: ^1.17.0
 
 dev_dependencies:
   lints: ^6.0.0
