@@ -1,8 +1,9 @@
 import 'package:valence/src/core/node/nodes.dart';
 import 'package:valence/src/core/scope.dart';
+import 'package:valence/src/types.dart';
 
 Watch watch(
-  void Function(S Function<S>(Subscribable<S>)) fn, {
+  void Function(SubscribeCallback) fn, {
   ValenceScope? scope,
   String? label,
 }) => _WatchImpl(fn, scope: scope, label: label);

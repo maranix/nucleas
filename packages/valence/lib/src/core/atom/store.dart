@@ -2,6 +2,7 @@ import 'package:valence/src/constants.dart';
 import 'package:valence/src/core/node/action.dart';
 import 'package:valence/src/core/node/nodes.dart';
 import 'package:valence/src/core/scope.dart';
+import 'package:valence/src/types.dart';
 
 Store<S, A> store<S, A extends Action<S>>(
   S val, {
@@ -12,7 +13,7 @@ Store<S, A> store<S, A extends Action<S>>(
 abstract interface class Store<S, A extends Action<S>> {
   Select<R> select<R>(
     R Function(S) fn, {
-    bool Function(R a, R b)? equals,
+    EqualityCallback<R>? equals,
     String? label,
   });
 
@@ -41,7 +42,7 @@ final class _StoreImpl<S, A extends Action<S>> extends SourceNode<S, A>
   @override
   Select<R> select<R>(
     R Function(S) fn, {
-    bool Function(R a, R b)? equals,
+    EqualityCallback<R>? equals,
     String? label,
   }) => _SelectorImpl(this, fn, equals: equals, label: label);
 }

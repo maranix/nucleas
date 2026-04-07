@@ -5,10 +5,11 @@ library;
 
 export 'src/core/node/action.dart';
 
-export 'src/core/node/nodes.dart' show Subscribable;
+export 'src/types.dart';
 
 export 'src/core/atom/store.dart';
 export 'src/core/atom/derive.dart';
 export 'src/core/atom/watch.dart';
 export 'src/core/atom/group.dart';
+
 export 'src/atoms/pool.dart';

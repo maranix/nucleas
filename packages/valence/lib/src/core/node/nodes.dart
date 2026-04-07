@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 import 'package:valence/src/constants.dart';
 import 'package:valence/src/core/node/action.dart';
 import 'package:valence/src/core/scope.dart';
+import 'package:valence/src/types.dart';
 import 'package:valence/src/utils/equality.dart';
 
 part 'mixin.dart';
@@ -64,7 +65,7 @@ abstract base class SelectorNode<T, S> extends Node
     this._store,
     this._fn, {
     Scope? scope,
-    bool Function(T, T)? equals,
+    EqualityCallback<T>? equals,
     super.label,
   }) : _equals = equals ?? defaultEquals,
        super(scope: scope ?? _store._scope) {
@@ -75,7 +76,7 @@ abstract base class SelectorNode<T, S> extends Node
 
   final T Function(S) _fn;
 
-  final bool Function(T a, T b) _equals;
+  final EqualityCallback<T> _equals;
 
   SourceNode<S, Action<S>> get store => _store;
 
@@ -121,7 +122,7 @@ abstract base class RelayNode<T> extends Node
         Lazy {
   RelayNode(this._fn, {super.scope, super.label});
 
-  final T Function(S Function<S>(Subscribable<S>) sub) _fn;
+  final T Function(SubscribeCallback) _fn;
 
   @override
   T call() {
@@ -159,7 +160,7 @@ abstract base class ObserverNode extends Node with UpstreamChain, Schedulable {
     refresh();
   }
 
-  final void Function(S Function<S>(Subscribable<S>) sub) _fn;
+  final void Function(SubscribeCallback) _fn;
 
   @override
   void refresh() {

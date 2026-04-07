@@ -1,8 +1,9 @@
 import 'package:valence/src/core/node/nodes.dart';
 import 'package:valence/src/core/scope.dart';
+import 'package:valence/src/types.dart';
 
 Derive<T> derive<T>(
-  T Function(S Function<S>(Subscribable<S>)) fn, {
+  T Function(SubscribeCallback) fn, {
   ValenceScope? scope,
   String? label,
 }) => _DeriveImpl(fn, scope: scope, label: label);
