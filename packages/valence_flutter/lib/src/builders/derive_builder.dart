@@ -8,7 +8,7 @@ class DeriveBuilder<T> extends StatefulWidget {
     required this.builder,
   });
 
-  final T Function(S Function<S>(Subscribable<S>)) derive;
+  final T Function(SubscribeCallback) derive;
   final Widget Function(T) builder;
 
   @override

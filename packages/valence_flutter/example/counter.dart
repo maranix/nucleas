@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart' hide Action;
-import 'package:valence/valence.dart';
 import 'package:valence_flutter/valence_flutter.dart';
 
 sealed class CounterAction extends Action<int> {}
@@ -57,7 +56,7 @@ class _CounterPageState extends State<CounterPage> {
       ),
       body: Center(
         child: DeriveBuilder(
-          derive: derive((sub) => sub(counterStore())),
+          derive: (sub) => sub(counterStore()),
           builder: (count) => Text(
             '$count',
             style: Theme.of(context).textTheme.displayLarge,

@@ -6,10 +6,12 @@ class StoreBuilder<T> extends StatefulWidget {
     super.key,
     required this.store,
     required this.builder,
+    this.filter,
   });
 
   final Store<T, Action> store;
   final Widget Function(T) builder;
+  final R Function<R>(T)? filter;
 
   @override
   State<StoreBuilder<T>> createState() => _StoreBuilderState<T>();
@@ -29,7 +31,12 @@ class _StoreBuilderState<T> extends State<StoreBuilder<T>> {
   void initState() {
     super.initState();
 
-    _select = widget.store();
+    if (widget.filter != null) {
+      _select = widget.store.select(widget.filter!);
+    } else {
+      _select = widget.store();
+    }
+
     _value = _select();
 
     _select.addListener(_onChangeListener);
