@@ -1,3 +1,5 @@
+# ignore_for_file: path_does_not_exist
+
 name: valence_workspace
 publish_to: none
 
@@ -5,5 +7,5 @@ environment:
   sdk: ^3.11.0
 
 workspace:
-  - packages/*
-  - examples/*
+  - packages/**
+  - examples/**
