@@ -81,8 +81,25 @@ mixin Schedulable on Node, UpstreamChain {
 
     upstream = newDeps.toList();
 
-    depth = maxDepth + 1;
+    _updateDepth(maxDepth + 1);
+
     _currentDeps.clear();
+  }
+
+  void _updateDepth(int newDepth) {
+    if (newDepth <= depth) return;
+
+    depth = newDepth;
+
+    if (this is DownstreamChain<Schedulable>) {
+      for (final child in (this as DownstreamChain<Schedulable>).downstream) {
+        final requiredChildDepth = depth + 1;
+
+        if (child.depth < requiredChildDepth) {
+          child._updateDepth(requiredChildDepth);
+        }
+      }
+    }
   }
 
   void refresh();
