@@ -110,7 +110,7 @@ abstract base class SelectorNode<T, S> extends Node
 
     _scope.scheduler.scheduleNodes(downstream);
 
-    notifyListeners();
+    _scheduleListeners();
   }
 
   @override
@@ -153,7 +153,7 @@ abstract base class RelayNode<T> extends Node
     _commitDeps();
     _scope.scheduler.scheduleNodes(downstream);
 
-    notifyListeners();
+    _scheduleListeners();
   }
 
   @override
