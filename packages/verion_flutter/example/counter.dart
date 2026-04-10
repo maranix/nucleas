@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:valence_flutter/valence_flutter.dart';
+import 'package:verion_flutter/verion_flutter.dart';
 
-enum CounterStoreEvent implements StoreEvent<int> {
+enum CounterStoreEvent implements SourceEvent<int> {
   increment,
   decrement
   ;
@@ -38,7 +38,7 @@ class CounterPage extends StatefulWidget {
 }
 
 class _CounterPageState extends State<CounterPage> {
-  final counterStore = store<int, CounterStoreEvent>(0);
+  final counterStore = source<int, CounterStoreEvent>(0);
 
   @override
   void dispose() {
@@ -56,7 +56,7 @@ class _CounterPageState extends State<CounterPage> {
       ),
       body: Center(
         child: DeriveBuilder(
-          derive: (sub) => sub(counterStore()),
+          derive: (sub) => sub(counterStore),
           builder: (count) => Text(
             '$count',
             style: Theme.of(context).textTheme.displayLarge,

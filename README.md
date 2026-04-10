@@ -1,4 +1,4 @@
-# Valence
+# Verion
 
 # Roadmap
 
@@ -13,4 +13,4 @@ Future capabilities may include:
 
 # License
 
-Valence is licensed under `MIT License`.
+Verion is licensed under `MIT License`.

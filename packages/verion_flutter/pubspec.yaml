@@ -1,4 +1,4 @@
-name: valence_flutter
+name: verion_flutter
 description: "A new Flutter package project."
 version: 1.0.0
 # homepage:
@@ -12,7 +12,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  valence: any
+  verion: any
 
 dev_dependencies:
   flutter_test:

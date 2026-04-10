@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:valence/valence.dart';
+import 'package:verion/verion.dart';
 
 class DeriveBuilder<T> extends StatefulWidget {
   const DeriveBuilder({
@@ -32,7 +32,7 @@ class _DeriveBuilderState<T> extends State<DeriveBuilder<T>> {
     _derive = derive(widget.derive);
     _derive.addListener(_onChangeListener);
 
-    _value = _derive();
+    _value = _derive.value;
   }
 
   @override

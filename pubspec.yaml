@@ -1,6 +1,6 @@
 # ignore_for_file: path_does_not_exist
 
-name: valence_workspace
+name: verion_workspace
 publish_to: none
 
 environment:
