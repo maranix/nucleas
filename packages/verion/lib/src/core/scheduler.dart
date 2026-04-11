@@ -30,7 +30,7 @@ final class _SchedulerImpl implements Scheduler {
 
   @override
   void scheduleNode(VerionBase node) {
-    if (_queued.contains(node)) return;
+    if (node.disposed || _queued.contains(node)) return;
 
     final depth = node.depth;
 
@@ -46,7 +46,7 @@ final class _SchedulerImpl implements Scheduler {
   @override
   void scheduleNodes(Iterable<VerionBase> nodes) {
     for (final node in nodes) {
-      if (_queued.contains(node)) continue;
+      if (node.disposed || _queued.contains(node)) continue;
 
       final depth = node.depth;
 
@@ -63,6 +63,8 @@ final class _SchedulerImpl implements Scheduler {
 
   @override
   void schedulePostFlushListener(ListenableVerion node) {
+    if (node.disposed || _listeners.contains(node)) return;
+
     _listeners.add(node);
   }
 
@@ -108,6 +110,9 @@ final class _SchedulerImpl implements Scheduler {
         }
 
         _queued.remove(node);
+
+        if (node.disposed) continue;
+
         node.refresh();
 
         // If a new node was queued at a lower at a depth during flush
