@@ -16,7 +16,7 @@ Derive<T> derive<T>(
 }) => DeriveBase(fn, notifyWhen: notifyWhen, label: label);
 
 final class DeriveBase<T> extends ReadableVerion<T>
-    with DependentVerion, ListenableVerion<T>
+    with Parents, Children, ListenableVerion<T>
     implements Derive<T> {
   DeriveBase(this._fn, {EqualityCallback<T>? notifyWhen, super.label})
     : _equals = notifyWhen ?? defaultEquals {
@@ -73,6 +73,24 @@ final class DeriveBase<T> extends ReadableVerion<T>
     scope.scheduler.schedulePostFlushListener(this);
   }
 
+  @override
+  void dispose() {
+    VerionObserver.instance?.onDeriveDisposed(this);
+
+    super.dispose();
+  }
+
+  @override
+  void updateDepth(int parentDepth) {
+    super.updateDepth(parentDepth);
+
+    if (hasChildren) {
+      for (var i = 0; i < children.length; i++) {
+        children[i].updateDepth(depth);
+      }
+    }
+  }
+
   S _subscribe<S>(ReadableVerion<S> node) {
     throwOnDisposed("subscribe");
 
@@ -83,12 +101,5 @@ final class DeriveBase<T> extends ReadableVerion<T>
     }
 
     return node.value;
-  }
-
-  @override
-  void dispose() {
-    VerionObserver.instance?.onDeriveDisposed(this);
-
-    super.dispose();
   }
 }

@@ -26,7 +26,7 @@ mixin SourceEvent<T> {
 }
 
 final class SourceBase<T, E extends SourceEvent<T>> extends ReadableVerion<T>
-    with ListenableVerion<T>
+    with ListenableVerion<T>, Children
     implements Source<T, E> {
   SourceBase(this._value, {EqualityCallback<T>? notifyWhen, super.label})
     : _equals = notifyWhen ?? defaultEquals {
@@ -86,12 +86,10 @@ final class SourceBase<T, E extends SourceEvent<T>> extends ReadableVerion<T>
   }
 
   @override
-  void onParentAdded(VerionBase node) {
-    throw UnimplementedError("Source doesn't support this operation");
-  }
-
-  @override
-  void cascadeParentDepthToChildren(int newDepth) {
-    throw UnimplementedError("Source doesn't support this operation");
+  void updateDepth(int parentDepth) {
+    throw VerionUnsupportedOperationError(
+      this,
+      "updateDepth. A Source node is a root and cannot have its depth modified.",
+    );
   }
 }

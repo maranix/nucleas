@@ -10,9 +10,7 @@ abstract interface class Observe {
 Observe observe(void Function(SubscribeCallback sub) fn, {String? label}) =>
     ObserveBase(fn, label: label);
 
-final class ObserveBase extends VerionBase
-    with DependentVerion
-    implements Observe {
+final class ObserveBase extends VerionBase with Parents implements Observe {
   ObserveBase(this._fn, {super.label}) {
     refresh();
   }

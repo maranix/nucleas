@@ -20,27 +20,37 @@ abstract class VerionBase {
   @internal
   int get depth => 0;
 
-  List<VerionBase>? _parents;
-  List<VerionBase>? _children;
-
-  @internal
-  @protected
-  bool get hasParents => _parents != null && _parents!.isNotEmpty;
-  @internal
-  @protected
-  bool get hasChildren => _children != null && _children!.isNotEmpty;
-
-  @internal
-  @protected
-  List<VerionBase> get parents => _parents!;
-  @internal
-  @protected
-  List<VerionBase> get children => _children!;
-
   bool _disposed = false;
   bool get disposed => _disposed;
 
   bool dirty = false;
+
+  @internal
+  @mustBeOverridden
+  void refresh();
+
+  @internal
+  @protected
+  void addChild(VerionBase node) {
+    throw UnsupportedError("$runtimeType does not support children.");
+  }
+
+  @internal
+  @protected
+  void removeChild(VerionBase node) {}
+
+  @internal
+  @protected
+  void updateDepth(int parentDepth);
+
+  @mustCallSuper
+  void dispose() {
+    throwOnDisposed("dispose");
+
+    _disposed = true;
+
+    _scope.removeNode(this);
+  }
 
   @internal
   @protected
@@ -49,42 +59,115 @@ abstract class VerionBase {
 
     throw VerionDisposedNodeError(this, action);
   }
+}
 
-  @internal
-  @mustBeOverridden
-  void refresh();
+abstract class ReadableVerion<T> extends VerionBase {
+  ReadableVerion({super.scope, super.label});
 
+  T get value;
+}
+
+mixin ListenableVerion<T> on ReadableVerion<T> {
+  final List<ValueCallback<T>> _listeners = [];
+
+  void addListener(ValueCallback<T> fn) {
+    throwOnDisposed("attach listener to");
+
+    _listeners.add(fn);
+  }
+
+  void removeListener(ValueCallback<T> fn) => _listeners.remove(fn);
+
+  void notifyListeners() {
+    for (var i = 0; i < _listeners.length; i++) {
+      _listeners[i](value);
+    }
+  }
+
+  @override
   @mustCallSuper
   void dispose() {
-    throwOnDisposed("dispose");
+    _listeners.clear();
 
-    _disposed = true;
-
-    if (hasChildren) {
-      while (children.isNotEmpty) {
-        children.removeLast().dispose();
-      }
-      _children = null;
-    }
-
-    if (hasParents) {
-      while (parents.isNotEmpty) {
-        parents.removeLast().removeChild(this);
-      }
-      _parents = null;
-    }
-
-    _scope.removeNode(this);
+    super.dispose();
   }
+}
+
+mixin Children on VerionBase {
+  List<VerionBase>? _children;
 
   @internal
   @protected
+  bool get hasChildren => _children != null && _children!.isNotEmpty;
+
+  @internal
+  @protected
+  List<VerionBase> get children => _children ?? [];
+
+  @override
+  @internal
+  @protected
   void addChild(VerionBase node) {
-    if (!hasChildren) _children = [];
+    _children ??= [];
 
     if (!children.contains(node)) {
       children.add(node);
     }
+  }
+
+  @override
+  @internal
+  @protected
+  void removeChild(VerionBase node) {
+    if (!hasChildren) return;
+
+    final nodeIdx = children.indexOf(node);
+    if (nodeIdx == -1) return;
+
+    children[nodeIdx] = children.last;
+    children.removeLast();
+  }
+
+  @override
+  void dispose() {
+    if (hasChildren) {
+      while (children.isNotEmpty) {
+        children.removeLast().dispose();
+      }
+
+      _children = null;
+    }
+    super.dispose();
+  }
+}
+
+mixin Parents on VerionBase {
+  List<VerionBase>? _parents;
+
+  int _depth = 1;
+
+  @override
+  int get depth => _depth;
+
+  @internal
+  @protected
+  bool get hasParents => _parents != null && _parents!.isNotEmpty;
+
+  @internal
+  @protected
+  List<VerionBase> get parents => _parents!;
+
+  @internal
+  @protected
+  void onParentAdded(VerionBase node) {
+    updateDepth(node.depth);
+  }
+
+  @override
+  void updateDepth(int parentDepth) {
+    if (_depth > parentDepth) return;
+
+    _depth = parentDepth + 1;
   }
 
   @internal
@@ -99,18 +182,6 @@ abstract class VerionBase {
 
       onParentAdded(node);
     }
-  }
-
-  @internal
-  @protected
-  void removeChild(VerionBase node) {
-    if (!hasChildren) return;
-
-    final nodeIdx = children.indexOf(node);
-    if (nodeIdx == -1) return;
-
-    children[nodeIdx] = children.last;
-    children.removeLast();
   }
 
   @internal
@@ -209,71 +280,15 @@ abstract class VerionBase {
     _parents = subs;
   }
 
-  @internal
-  @protected
-  void onParentAdded(VerionBase node);
-
-  @internal
-  @protected
-  void cascadeParentDepthToChildren(int newDepth);
-}
-
-abstract class ReadableVerion<T> extends VerionBase {
-  ReadableVerion({super.scope, super.label});
-
-  T get value;
-}
-
-mixin ListenableVerion<T> on ReadableVerion<T> {
-  final List<ValueCallback<T>> _listeners = [];
-
-  void addListener(ValueCallback<T> fn) {
-    throwOnDisposed("attach listener to");
-
-    _listeners.add(fn);
-  }
-
-  void removeListener(ValueCallback<T> fn) => _listeners.remove(fn);
-
-  void notifyListeners() {
-    for (var i = 0; i < _listeners.length; i++) {
-      _listeners[i](value);
-    }
-  }
-
   @override
-  @mustCallSuper
   void dispose() {
-    _listeners.clear();
-
-    super.dispose();
-  }
-}
-
-mixin DependentVerion on VerionBase {
-  int _depth = 1;
-
-  @override
-  int get depth => _depth;
-
-  @internal
-  @protected
-  @override
-  void onParentAdded(VerionBase node) {
-    cascadeParentDepthToChildren(node.depth);
-  }
-
-  @override
-  void cascadeParentDepthToChildren(int newDepth) {
-    // Child nodes should be strictly in a deeper depth than the parent
-    if (_depth > newDepth) return;
-
-    _depth = newDepth + 1;
-
-    if (hasChildren) {
-      for (final child in children) {
-        child.cascadeParentDepthToChildren(_depth);
+    if (hasParents) {
+      while (parents.isNotEmpty) {
+        parents.removeLast().removeChild(this);
       }
+
+      _parents = null;
     }
+    super.dispose();
   }
 }
